@@ -1,0 +1,32 @@
+package: retail
+version: 0.1.0
+label: Retail
+description: "Click and collect with a pickup code from the store an order ships from, and franchise royalties invoiced through ERP"
+depends: [core, selling, inventory, accounting]
+
+modules:
+  - name: retail
+    label: Retail
+    icon: store
+    order: 56
+    items: [CollectOrder, Franchisee, RoyaltyReport, RetailSettings]
+
+roles:
+  - name: Retail Manager
+    description: Runs click and collect across the stores, and franchises and their royalties.
+    permissions:
+      - {entity: RetailSettings, read: true, write: true, create: true}
+      - {entity: CollectOrder, read: true, write: true, create: true}
+      - {entity: Franchisee, read: true, write: true, create: true}
+      - {entity: RoyaltyReport, read: true, write: true, create: true, export: true}
+      - {entity: Customer, read: true}
+      - {entity: Item, read: true}
+      - {entity: Warehouse, read: true}
+      - {entity: SalesOrder, read: true}
+      - {entity: SalesInvoice, read: true}
+  - name: Store Associate
+    description: Gets click and collect orders ready and hands them over against their code.
+    permissions:
+      - {entity: CollectOrder, read: true, write: true, create: true}
+      - {entity: SalesOrder, read: true}
+      - {entity: Warehouse, read: true}
