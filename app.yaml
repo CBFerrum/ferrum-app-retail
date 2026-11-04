@@ -1,0 +1,32 @@
+id: retail
+name: Retail
+version: 0.1.0
+publisher: cbferrum
+summary: "Click and collect with a pickup code from the store an order ships from, and franchise royalties invoiced through ERP"
+description: README.md
+categories: [commerce, inventory]
+license: AGPL-3.0-only
+homepage: https://github.com/CBFerrum/ferrum-app-retail
+support: https://github.com/CBFerrum/ferrum-app-retail/issues
+runtime: native
+platform: ">=0.3.2, <0.4"
+# Stock, orders and invoices are ERP's: installing it installs ERP.
+requires: {erp: ">=0.1"}
+packages: [retail]
+uninstall: ask
+# Its own interface at /retail/: collections waiting, and royalties to invoice.
+ui:
+  dist: ui/dist
+contributes:
+  shell.app:
+    - id: retail
+      route: retail
+      title: Retail
+      description: Click and collect, and franchises
+      icon: store
+      color: "#be185d"
+      roles: [Retail Manager, Store Associate]
+  shell.open:
+    - {id: retail, package: retail, path: "retail/e/{entity}/{id}", list: "retail/e/{entity}"}
+  shell.create:
+    - {id: collect, label: Click and Collect, path: retail/e/CollectOrder/new, entity: CollectOrder}

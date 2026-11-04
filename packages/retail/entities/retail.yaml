@@ -1,0 +1,70 @@
+- name: RetailSettings
+  label: Retail Settings
+  kind: settings
+  module: retail
+  description: "What franchise fees are invoiced as, and from which company."
+  fields:
+    - {name: company, type: link, to: Company, required: true}
+    - {name: royalty_item, type: link, to: Item, description: "What a franchise's royalty is invoiced as"}
+    - {name: marketing_item, type: link, to: Item, description: "What a franchise's marketing fee is invoiced as"}
+  form:
+    - {label: Franchise fees, fields: [company, royalty_item, marketing_item]}
+
+- name: CollectOrder
+  label: Click and Collect
+  label_plural: Click and Collect
+  kind: master
+  module: retail
+  title_field: sales_order
+  description: An order bought online and collected in a store with its pickup code.
+  fields:
+    - {name: sales_order, type: link, to: SalesOrder, required: true, in_list: true, in_filter: true}
+    - {name: store, type: link, to: Warehouse, required: true, in_list: true, in_filter: true}
+    - {name: status, type: select, options: [Ordered, Ready, Collected, Cancelled], default: Ordered, read_only: true, no_copy: true, in_list: true, in_filter: true}
+    - {name: pickup_code, type: data, read_only: true, no_copy: true, description: "What the customer shows to collect it"}
+    - {name: ready_at, type: datetime, read_only: true, no_copy: true}
+    - {name: collected_at, type: datetime, read_only: true, no_copy: true}
+    - {name: delivery_note, type: link, to: DeliveryNote, read_only: true, no_copy: true}
+  actions:
+    - {name: make_ready, label: It Is Ready, permission: write, condition: "doc.status == 'Ordered'"}
+    - {name: hand_over, label: Hand It Over, permission: write, condition: "doc.status == 'Ready'", params: [{name: code, type: data, label: Pickup Code, required: true}]}
+    - {name: cancel_collect, label: Cancel It, permission: write, condition: "doc.status == 'Ordered' || doc.status == 'Ready'"}
+  numbering: {template: "CC-{YYYY}-{seq:5}"}
+  list: {columns: [number, sales_order, store, status], sort: created_at desc}
+
+- name: Franchisee
+  label: Franchisee
+  label_plural: Franchisees
+  kind: master
+  module: retail
+  title_field: customer
+  fields:
+    - {name: customer, type: link, to: Customer, required: true, in_list: true}
+    - {name: territory, type: data, in_list: true, in_filter: true}
+    - {name: royalty_percent, type: percent, required: true, in_list: true}
+    - {name: marketing_percent, type: percent, default: 0, in_list: true}
+    - {name: starts_on, type: date, required: true}
+    - {name: ends_on, type: date, required: true, in_list: true}
+  list: {columns: [customer, territory, royalty_percent, ends_on], sort: created_at desc}
+
+- name: RoyaltyReport
+  label: Royalty Report
+  label_plural: Royalty Reports
+  kind: master
+  module: retail
+  title_field: franchisee
+  description: A franchisee's sales for a period, and the royalty and marketing fee on them, invoiced through ERP.
+  fields:
+    - {name: franchisee, type: link, to: Franchisee, required: true, in_list: true, in_filter: true}
+    - {name: period_from, type: date, required: true, in_list: true}
+    - {name: period_to, type: date, required: true, in_list: true}
+    - {name: gross_sales, type: currency, required: true, in_list: true}
+    - {name: royalty, type: currency, read_only: true, in_list: true}
+    - {name: marketing, type: currency, read_only: true}
+    - {name: total, type: currency, read_only: true, in_list: true}
+    - {name: status, type: select, options: [Draft, Invoiced], default: Draft, read_only: true, no_copy: true, in_list: true, in_filter: true}
+    - {name: sales_invoice, type: link, to: SalesInvoice, read_only: true, no_copy: true}
+  actions:
+    - {name: invoice_royalty, label: Invoice It, permission: write, condition: "doc.status == 'Draft'"}
+  numbering: {template: "ROY-{YYYY}-{seq:5}"}
+  list: {columns: [number, franchisee, period_from, period_to, total, status], sort: period_from desc}
