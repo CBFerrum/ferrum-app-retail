@@ -53,6 +53,7 @@ cd ui && npm run build && npm run check
 
 | Version | Highlights |
 |---|---|
+| **0.1.2** | Rebuilt with Ferrum-Frontend daeadda: actions say what they did. |
 | **0.1.1** | Rebuilt with Ferrum-Frontend 80ff179: labels name their fields, and linked titles show their titles. |
 | **0.1.0** | Click and collect with a pickup code from the store an order ships from, and franchise royalties invoiced through ERP (FERRUM-INDUSTRY-003). |
 
