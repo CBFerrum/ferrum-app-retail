@@ -4,7 +4,9 @@
 //! the store holds it, handed over only against its pickup code, its delivery note then made and
 //! submitted so the goods leave the store; one collection to an order; franchisees' sales reported
 //! for periods within their agreement, never two for a day, their royalty and marketing fee
-//! invoiced through ERP once; and who may do what.
+//! invoiced through ERP once; who may do what; stock asked of another store, sent through the
+//! goods in transit and taken in, only what the store holds; and franchisees reporting their sales
+//! on the portal, under their own agreements only.
 
 use ferrum_kernel::secret::SecretKey;
 use ferrum_kernel::tenant::NewTenant;
@@ -20,6 +22,23 @@ fn obj(v: Value) -> Doc {
 
 fn uid(v: &Value) -> Uuid {
     v.as_str().unwrap_or_else(|| panic!("not an id: {v}")).parse().unwrap()
+}
+
+/// Retail's endpoint, as the platform hands it a request from `who`.
+async fn call(k: &Kernel, who: Option<&Ctx>, method: &str, path: &str, body: Value) -> Result<Value, Error> {
+    let site = k.hooks.site("retail").expect("retail's endpoints").clone();
+    let req = ferrum_kernel::SiteRequest {
+        tenant: who.map(|c| c.tenant).unwrap_or_default(),
+        user: who.cloned(),
+        method: method.into(),
+        path: format!("/{path}"),
+        query: Default::default(),
+        headers: Default::default(),
+        body: if body.is_null() { vec![] } else { body.to_string().into_bytes() },
+        client_ip: "203.0.113.9".into(),
+    };
+    let r = site.handle(k, req).await?;
+    Ok(serde_json::from_slice(&r.body).unwrap())
 }
 
 fn dec(v: &Value) -> f64 {
@@ -228,4 +247,101 @@ async fn scenario() {
     // ───────────── who may do what ─────────────
     refused(t.k.insert(&associate, "RoyaltyReport", obj(report("2026-12-01", "2026-12-31", "1"))).await, "forbidden", "");
     refused(t.k.insert(&associate, "Franchisee", obj(franchise("5", "1", "2026-01-01", "2027-01-01"))).await, "forbidden", "");
+
+    // ───────────── between stores ─────────────
+    let ask = |from: Uuid, to: Uuid, lines: Value| json!({"from_store": from.to_string(), "to_store": to.to_string(), "items": lines});
+    let kettles = |qty: &str| json!([{"item": kettle.to_string(), "qty": qty}]);
+    refused(t.k.insert(&associate, "StoreTransfer", obj(ask(downtown, downtown, kettles("1")))).await, "invalid", "another store");
+    refused(t.k.insert(&associate, "StoreTransfer", obj(ask(downtown, uptown, kettles("0")))).await, "invalid", "more than nothing");
+    let twice = json!([{"item": kettle.to_string(), "qty": "1"}, {"item": kettle.to_string(), "qty": "2"}]);
+    refused(t.k.insert(&associate, "StoreTransfer", obj(ask(downtown, uptown, twice))).await, "invalid", "on one line");
+    assert_eq!((t.stock(downtown, kettle).await, t.stock(uptown, kettle).await), (3.0, 0.0));
+    let too_many = t.insert(&associate, "StoreTransfer", ask(downtown, uptown, kettles("5"))).await;
+    assert_eq!((too_many["status"].as_str(), too_many["requested_by"].as_str()), (Some("Requested"), Some("till@shops.test")));
+    refused(t.act(&associate, "StoreTransfer", uid(&too_many["id"]), "send_transfer", Value::Null).await, "invalid", "does not hold it: Kettle (3 of 5)");
+    // Nowhere in between: what is sent arrives at once.
+    let direct = uid(&t.insert(&associate, "StoreTransfer", ask(downtown, uptown, kettles("2"))).await["id"]);
+    t.act(&associate, "StoreTransfer", direct, "send_transfer", Value::Null).await.expect("sent");
+    let d = t.get("StoreTransfer", direct).await;
+    assert_eq!((d["status"].as_str(), d["sent_entry"].clone()), (Some("Received"), d["received_entry"].clone()));
+    assert_eq!(t.get("StockEntry", uid(&d["sent_entry"])).await["docstatus"].as_i64(), Some(1), "an ERP stock entry, submitted");
+    assert_eq!((t.stock(downtown, kettle).await, t.stock(uptown, kettle).await), (1.0, 2.0));
+    refused(t.k.update(&associate, "StoreTransfer", direct, obj(json!({"note": "changed"})), None).await, "invalid", "kept as it was");
+    // Through the goods in transit: sent, on the way, then taken in.
+    let transit = uid(&t.insert(&a, "Warehouse", json!({"warehouse_name": "In Transit", "company": company.to_string()})).await["id"]);
+    let settings = uid(&t.find_one("RetailSettings", json!({})).await["id"]);
+    t.k.update(&manager, "RetailSettings", settings, obj(json!({"transit_warehouse": transit.to_string()})), None).await.expect("goods in transit");
+    let van = uid(&t.insert(&associate, "StoreTransfer", ask(downtown, uptown, kettles("1"))).await["id"]);
+    t.act(&associate, "StoreTransfer", van, "send_transfer", Value::Null).await.expect("sent");
+    assert_eq!(t.get("StoreTransfer", van).await["status"], "Sent");
+    assert_eq!((t.stock(downtown, kettle).await, t.stock(transit, kettle).await, t.stock(uptown, kettle).await), (0.0, 1.0, 2.0), "on the way");
+    t.act(&associate, "StoreTransfer", van, "receive_transfer", Value::Null).await.expect("taken in");
+    let v = t.get("StoreTransfer", van).await;
+    assert!(v["status"] == "Received" && v["received_entry"] != v["sent_entry"] && v["received_at"].is_string(), "{v:?}");
+    assert_eq!((t.stock(transit, kettle).await, t.stock(uptown, kettle).await), (0.0, 3.0));
+    // Turned down, saying why; or cancelled by who asked.
+    let no = uid(&t.insert(&associate, "StoreTransfer", ask(uptown, downtown, kettles("1"))).await["id"]);
+    refused(t.act(&associate, "StoreTransfer", no, "reject_transfer", json!({"why": " "})).await, "invalid", "says why");
+    t.act(&associate, "StoreTransfer", no, "reject_transfer", json!({"why": "Our last ones"})).await.expect("turned down");
+    let n = t.get("StoreTransfer", no).await;
+    assert!(n["status"] == "Rejected" && n["note"].as_str().unwrap().contains("Turned down: Our last ones"));
+    let nevermind = uid(&t.insert(&associate, "StoreTransfer", ask(uptown, downtown, kettles("1"))).await["id"]);
+    t.act(&associate, "StoreTransfer", nevermind, "cancel_transfer", Value::Null).await.expect("cancelled");
+    refused(t.act(&associate, "StoreTransfer", nevermind, "send_transfer", Value::Null).await, "invalid", "not available");
+    let nobody = t.user("guest@shops.test", &[]).await;
+    refused(t.k.insert(&nobody, "StoreTransfer", obj(ask(uptown, downtown, kettles("1")))).await, "forbidden", "");
+
+    // ───────────── franchisees on the portal ─────────────
+    t.k.update(&a, "Customer", franco, obj(json!({"email": "owner@franco.test"})), None).await.unwrap();
+    let portal = |email: &'static str| {
+        let k = k.clone();
+        let a = a.clone();
+        async move {
+            let id = k.create_user(&a, email, "Franchisee", None, &[], false).await.unwrap();
+            k.set_user_kind(&a, id, "portal").await.unwrap();
+            k.load_ctx(a.tenant, id, None, "it".into()).await.unwrap()
+        }
+    };
+    let owner = portal("Owner@Franco.test").await;
+    assert!(owner.roles.is_empty() && t.k.list(&owner, "Franchisee", &ListQuery::default()).await.is_err(), "no rights of their own");
+    let mine = call(&k, Some(&owner), "GET", "portal/franchise", Value::Null).await.unwrap();
+    let agreement = &mine["agreements"][0];
+    assert_eq!((mine["agreements"].as_array().unwrap().len(), agreement["id"].as_str()), (1, Some(fr.to_string().as_str())));
+    let reported: Vec<(String, String)> =
+        agreement["reports"].as_array().unwrap().iter().map(|r| (r["period_from"].as_str().unwrap().into(), r["status"].as_str().unwrap().into())).collect();
+    assert_eq!(reported, [("2026-11-01".to_string(), "Draft".to_string()), ("2026-10-01".to_string(), "Invoiced".to_string())], "the latest first");
+    assert!(agreement["reports"][1]["invoice"].is_null(), "an invoice not issued is not theirs to open yet");
+    let dec_report = json!({"franchisee": fr.to_string(), "period_from": "2026-12-01", "period_to": "2026-12-31", "gross_sales": "80000"});
+    let made = call(&k, Some(&owner), "POST", "portal/reports", dec_report.clone()).await.expect("reported");
+    assert_eq!(dec(&made["total"]), 6400.0, "6% and 2% of 80000");
+    let saved = t.get("RoyaltyReport", uid(&made["id"])).await;
+    assert_eq!((saved["reported_by"].as_str(), saved["status"].as_str()), (Some("owner@franco.test"), Some("Draft")));
+    refused(call(&k, Some(&owner), "POST", "portal/reports", dec_report).await, "invalid", "reports some of these days already");
+    refused(
+        call(&k, Some(&owner), "POST", "portal/reports", json!({"franchisee": fr.to_string(), "period_from": "2026-12-01"})).await,
+        "invalid",
+        "gives its period",
+    );
+    let stranger = portal("someone@elsewhere.test").await;
+    let none = call(&k, Some(&stranger), "GET", "portal/franchise", Value::Null).await.unwrap();
+    assert!(none["agreements"].as_array().unwrap().is_empty());
+    refused(
+        call(
+            &k,
+            Some(&stranger),
+            "POST",
+            "portal/reports",
+            json!({"franchisee": fr.to_string(), "period_from": "2027-01-01", "period_to": "2027-01-31", "gross_sales": "1"}),
+        )
+        .await,
+        "invalid",
+        "not an agreement of yours",
+    );
+    assert!(matches!(call(&k, None, "GET", "portal/franchise", Value::Null).await, Err(Error::Unauthorized(_))));
+    // Once accounts issue the October fees, they open on Your invoices.
+    let oct_invoice = uid(&invoiced["sales_invoice"]["id"]);
+    t.k.submit(&a, "SalesInvoice", oct_invoice, None).await.expect("issued");
+    let mine = call(&k, Some(&owner), "GET", "portal/franchise", Value::Null).await.unwrap();
+    let october = mine["agreements"][0]["reports"].as_array().unwrap().iter().find(|r| r["period_from"] == "2026-10-01").unwrap().clone();
+    assert_eq!((october["invoice"].as_str(), october["issued"].as_bool()), (Some(oct_invoice.to_string().as_str()), Some(true)));
 }
