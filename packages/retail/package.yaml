@@ -9,7 +9,7 @@ modules:
     label: Retail
     icon: store
     order: 56
-    items: [CollectOrder, Franchisee, RoyaltyReport, RetailSettings]
+    items: [CollectOrder, StoreTransfer, Franchisee, RoyaltyReport, RetailSettings]
 
 roles:
   - name: Retail Manager
@@ -24,9 +24,19 @@ roles:
       - {entity: Warehouse, read: true}
       - {entity: SalesOrder, read: true}
       - {entity: SalesInvoice, read: true}
+      - {entity: StoreTransfer, read: true, write: true, create: true, export: true}
+      - {entity: StockEntry, read: true}
   - name: Store Associate
-    description: Gets click and collect orders ready and hands them over against their code.
+    description: Gets click and collect orders ready and hands them over against their code, and asks other stores for stock, sends it and takes it in.
     permissions:
       - {entity: CollectOrder, read: true, write: true, create: true}
+      - {entity: StoreTransfer, read: true, write: true, create: true}
       - {entity: SalesOrder, read: true}
       - {entity: Warehouse, read: true}
+      - {entity: Item, read: true}
+
+# Personal-data requests reach the people Retail names by address; erasure takes it off, and the
+# records stay.
+personal_data:
+  - {entity: RoyaltyReport, match: reported_by, erase: [reported_by]}
+  - {entity: StoreTransfer, match: requested_by, erase: [requested_by]}

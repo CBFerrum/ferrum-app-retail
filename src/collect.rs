@@ -16,7 +16,7 @@ use uuid::Uuid;
 pub struct CollectHook;
 
 /// The quantity of `item` in `warehouse`, from ERP's balances.
-async fn on_hand(tx: &mut Tx, tenant: Uuid, warehouse: Uuid, item: Uuid) -> Result<Decimal> {
+pub(crate) async fn on_hand(tx: &mut Tx, tenant: Uuid, warehouse: Uuid, item: Uuid) -> Result<Decimal> {
     Ok(sqlx::query_scalar("select coalesce(sum(qty), 0) from stock_balance where tenant_id = $1 and warehouse_id = $2 and item_id = $3")
         .bind(tenant)
         .bind(warehouse)

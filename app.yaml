@@ -1,8 +1,8 @@
 id: retail
 name: Retail
-version: 0.1.3
+version: 0.2.0
 publisher: cbferrum
-summary: "Click and collect with a pickup code from the store an order ships from, and franchise royalties invoiced through ERP"
+summary: "Click and collect with a pickup code, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
 description: README.md
 categories: [commerce, inventory]
 license: AGPL-3.0-only
@@ -30,3 +30,7 @@ contributes:
     - {id: retail, package: retail, path: "retail/e/{entity}/{id}", list: "retail/e/{entity}"}
   shell.create:
     - {id: collect, label: Click and Collect, path: retail/e/CollectOrder/new, entity: CollectOrder}
+    - {id: transfer, label: Store Transfer, path: retail/e/StoreTransfer/new, entity: StoreTransfer}
+  # The workspace's portal: a franchisee's agreements, their sales reported and the fees on them.
+  shell.portal:
+    - {id: franchise, title: Your franchise, description: "Report your sales, and see the fees invoiced on them"}

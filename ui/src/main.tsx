@@ -1,11 +1,12 @@
-// Retail's own interface at /retail/: collections waiting and royalties due, with every record in
-// the records frame's lists and forms.
+// Retail's own interface at /retail/: collections waiting, transfers between stores and royalties
+// due, with every record in the records frame's lists and forms. The same release draws its page of
+// the workspace's portal, "Your franchise" at /portal/franchise/ (Ferrum docs/plan/apps-ui.md §9.1).
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { createBrowserRouter, Link, RouterProvider, useRouteError } from "react-router";
-import { routeBase, shell } from "@ferrum/client";
+import { createBrowserRouter, Link, Outlet, RouterProvider, useRouteError } from "react-router";
+import { bootstrap, routeBase, shell } from "@ferrum/client";
 import { ConfirmHost, EmptyState, ErrorState, Toaster } from "@ferrum/kit";
 import { RequireAuth, setFrameMode } from "@ferrum/records/frame";
 import "./styles.css";
@@ -18,10 +19,10 @@ function RouteError() {
   return <ErrorState error={useRouteError()} onRetry={() => window.location.reload()} />;
 }
 
-function NotFound() {
+function NotFound({ back = "Go to the stores" }: { back?: string }) {
   return (
     <EmptyState title="Page not found">
-      <Link to="/">Go to the stores</Link>
+      <Link to="/">{back}</Link>
     </EmptyState>
   );
 }
@@ -31,32 +32,55 @@ function Started() {
   return null;
 }
 
-setFrameMode("app", ["retail"]);
+/** The portal's page, when the platform serves this release there. */
+const PORTAL = "portal/franchise";
+const onPortal = bootstrap()?.app?.entry === PORTAL;
 
-const router = createBrowserRouter(
-  [
-    {
-      path: "/",
-      element: (
-        <>
-          <Started />
-          <RequireAuth />
-        </>
-      ),
-      errorElement: <RouteError />,
-      children: [
-        { index: true, lazy: () => import("./Home").then((m) => ({ Component: m.Home })) },
-        { path: "e/:entity", lazy: page("ListView") },
-        { path: "e/:entity/:id", lazy: page("FormView") },
-        { path: "r/:name", lazy: page("ReportView") },
-        { path: "apps/:app/settings", lazy: page("AppSettingsPage") },
-        { path: "x/:app/:page", lazy: page("ScreenPage") },
-        { path: "*", element: <NotFound /> },
-      ],
-    },
-  ],
-  { basename: routeBase("retail") },
-);
+if (!onPortal) setFrameMode("app", ["retail"]);
+
+const portalRoutes = [
+  {
+    path: "/",
+    element: (
+      <main>
+        <Started />
+        <Outlet />
+      </main>
+    ),
+    errorElement: <RouteError />,
+    children: [
+      { index: true, lazy: () => import("./Portal").then((m) => ({ Component: m.FranchiseHome })) },
+      { path: "new", lazy: () => import("./Portal").then((m) => ({ Component: m.FranchiseReport })) },
+      { path: "*", element: <NotFound back="Go to your franchise" /> },
+    ],
+  },
+];
+
+const staffRoutes = [
+  {
+    path: "/",
+    element: (
+      <>
+        <Started />
+        <RequireAuth />
+      </>
+    ),
+    errorElement: <RouteError />,
+    children: [
+      { index: true, lazy: () => import("./Home").then((m) => ({ Component: m.Home })) },
+      { path: "e/:entity", lazy: page("ListView") },
+      { path: "e/:entity/:id", lazy: page("FormView") },
+      { path: "r/:name", lazy: page("ReportView") },
+      { path: "apps/:app/settings", lazy: page("AppSettingsPage") },
+      { path: "x/:app/:page", lazy: page("ScreenPage") },
+      { path: "*", element: <NotFound /> },
+    ],
+  },
+];
+
+const router = onPortal
+  ? createBrowserRouter(portalRoutes, { basename: routeBase(PORTAL) })
+  : createBrowserRouter(staffRoutes, { basename: routeBase("retail") });
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
