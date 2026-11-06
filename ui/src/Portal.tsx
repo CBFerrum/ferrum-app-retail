@@ -6,7 +6,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { api, errorMessage, todayIso } from "@ferrum/client";
+import { api, errorMessage, formatValue, todayIso } from "@ferrum/client";
 import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle } from "@ferrum/kit";
 
 const BASE = "/api/app/retail/portal";
@@ -32,6 +32,9 @@ export interface Agreement {
   ends_on?: string | null;
   reports: PortalReport[];
 }
+
+/** An amount as money: digits grouped, two decimals. */
+const money = (v: string | null | undefined) => formatValue({ type: "currency" }, v);
 
 /** The agreements a franchisee may report on `today` (YYYY-MM-DD): those in force or ended, never ones not begun. */
 export function reportable(agreements: Agreement[], today: string): Agreement[] {
@@ -80,8 +83,8 @@ export function FranchiseHome() {
               <ul className="stack">
                 {a.reports.map((r) => (
                   <li key={r.id}>
-                    {r.number} · {r.period_from} to {r.period_to} · sales {r.gross_sales} · fees{" "}
-                    {r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{r.total}</a> : r.total} <Badge tone={statusTone(r.status)}>{r.status}</Badge>
+                    {r.number} · {r.period_from} to {r.period_to} · sales {money(r.gross_sales)} · fees{" "}
+                    {r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{money(r.total)}</a> : money(r.total)} <Badge tone={statusTone(r.status)}>{r.status}</Badge>
                     {r.status === "Invoiced" && !r.issued && <span className="muted"> · not issued yet</span>}
                   </li>
                 ))}
