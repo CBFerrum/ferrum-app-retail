@@ -73,7 +73,7 @@ pub(crate) fn say(short: &[(Uuid, String, Decimal, Decimal)]) -> String {
 /// Whether `warehouse` is a store (Is A Store) of `company`.
 pub(crate) async fn is_store(tx: &mut Tx, tenant: Uuid, warehouse: Uuid, company: Option<Uuid>) -> Result<bool> {
     let store: Option<bool> = sqlx::query_scalar(
-        "select coalesce(retail_store, false) and not coalesce(is_group, false) and company is not distinct from $3 from e_warehouse where tenant_id = $1 and id = $2",
+        "select coalesce((ext->>'retail_store')::boolean, false) and not coalesce(is_group, false) and company is not distinct from $3 from e_warehouse where tenant_id = $1 and id = $2",
     )
     .bind(tenant)
     .bind(warehouse)
