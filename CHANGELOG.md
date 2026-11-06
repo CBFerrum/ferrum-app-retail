@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.0
+
+Transfers between stores, and franchisees on the portal (FERRUM-INDUSTRY-003).
+
+- **Store transfers:** a store asks another for stock. Send It moves only what the giving store
+  holds, as a submitted ERP stock entry into the settings' goods in transit. It Arrived takes it
+  into the store that asked. Without a transit warehouse, it arrives as it is sent. A transfer
+  may be turned down, saying why, or cancelled. Once sent, it is kept as it was. The stores page
+  lists transfers asked for and on the way.
+- **Your franchise:** a page of the workspace's portal, at /portal/franchise/. A franchisee sees
+  their agreements, the sales they reported and the fees on them; each invoice opens on Your
+  invoices once issued. They report a period's sales under their own agreements, by the office's
+  rules. The report keeps who made it, and personal-data requests reach it.
+- Rebuilt with Ferrum-Frontend 4a3681c.
+
 ## 0.1.3
 
 Rebuilt with Ferrum-Frontend 00dea07: in a workflow state that names what may change, the other fields show read-only, and the fields the state needs show required.
