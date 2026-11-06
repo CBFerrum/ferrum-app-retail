@@ -97,6 +97,7 @@ cd ui && npm run build && npm run check
 
 | Version | Highlights |
 |---|---|
+| **0.3.4** | Rebuilt with Ferrum-Frontend a64416a: a box whose default is 1 shows ticked. |
 | **0.3.3** | The franchise portal shows sales and fees as money. |
 | **0.3.2** | Ship from store works for an order that names no warehouse, as web orders do. |
 | **0.3.1** | Rebuilt with Ferrum-Frontend a76295e: times on a person's own clock when they chose one. Today is the workspace's day, not UTC's. |
