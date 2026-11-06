@@ -2,13 +2,15 @@
   label: Retail Settings
   kind: settings
   module: retail
-  description: "What franchise fees are invoiced as, and from which company."
+  description: "What franchise fees are invoiced as, from which company, and where goods between stores are."
   fields:
     - {name: company, type: link, to: Company, required: true}
     - {name: royalty_item, type: link, to: Item, description: "What a franchise's royalty is invoiced as"}
     - {name: marketing_item, type: link, to: Item, description: "What a franchise's marketing fee is invoiced as"}
+    - {name: transit_warehouse, type: link, to: Warehouse, link_filters: {is_group: false}, label: Goods in Transit, description: "Where goods sent between stores are until they arrive; without one, what is sent arrives at once"}
   form:
     - {label: Franchise fees, fields: [company, royalty_item, marketing_item]}
+    - {label: Between stores, fields: [transit_warehouse]}
 
 - name: CollectOrder
   label: Click and Collect
@@ -64,7 +66,42 @@
     - {name: total, type: currency, read_only: true, in_list: true}
     - {name: status, type: select, options: [Draft, Invoiced], default: Draft, read_only: true, no_copy: true, in_list: true, in_filter: true}
     - {name: sales_invoice, type: link, to: SalesInvoice, read_only: true, no_copy: true}
+    - {name: reported_by, type: email, read_only: true, no_copy: true, in_filter: true, description: "The franchisee's person who reported it on the portal"}
   actions:
     - {name: invoice_royalty, label: Invoice It, permission: write, condition: "doc.status == 'Draft'"}
   numbering: {template: "ROY-{YYYY}-{seq:5}"}
   list: {columns: [number, franchisee, period_from, period_to, total, status], sort: period_from desc}
+
+- name: StoreTransferItem
+  label: Transfer Line
+  kind: child
+  fields:
+    - {name: item, type: link, to: Item, required: true, in_list: true}
+    - {name: item_name, type: data, fetch_from: item.item_name, read_only: true, in_list: true}
+    - {name: qty, type: decimal, required: true, in_list: true}
+
+- name: StoreTransfer
+  label: Store Transfer
+  label_plural: Store Transfers
+  kind: master
+  module: retail
+  title_field: to_store
+  description: One store asking another for stock. Sent, the stock leaves the giving store for the goods in transit; received, it arrives at the store that asked. A store sends only what it holds.
+  fields:
+    - {name: from_store, type: link, to: Warehouse, required: true, link_filters: {is_group: false}, in_list: true, in_filter: true, label: From}
+    - {name: to_store, type: link, to: Warehouse, required: true, link_filters: {is_group: false}, in_list: true, in_filter: true, label: To}
+    - {name: items, type: table, of: StoreTransferItem, required: true}
+    - {name: status, type: select, options: [Requested, Sent, Received, Rejected, Cancelled], default: Requested, read_only: true, no_copy: true, in_list: true, in_filter: true}
+    - {name: requested_by, type: email, read_only: true, no_copy: true, in_list: true}
+    - {name: sent_at, type: datetime, read_only: true, no_copy: true}
+    - {name: received_at, type: datetime, read_only: true, no_copy: true}
+    - {name: sent_entry, type: link, to: StockEntry, read_only: true, no_copy: true, label: Sent By}
+    - {name: received_entry, type: link, to: StockEntry, read_only: true, no_copy: true, label: Received By}
+    - {name: note, type: text}
+  actions:
+    - {name: send_transfer, label: Send It, permission: write, condition: "doc.status == 'Requested'"}
+    - {name: receive_transfer, label: It Arrived, permission: write, condition: "doc.status == 'Sent'"}
+    - {name: reject_transfer, label: Turn It Down, permission: write, condition: "doc.status == 'Requested'", params: [{name: why, type: text, label: Why, required: true}]}
+    - {name: cancel_transfer, label: Cancel It, permission: write, condition: "doc.status == 'Requested'"}
+  numbering: {template: "ST-{YYYY}-{seq:5}"}
+  list: {columns: [number, from_store, to_store, status, requested_by], sort: created_at desc}

@@ -6,12 +6,18 @@
 //!   against its code, its delivery note then made and submitted.
 //! * `franchise`: a franchisee's reported sales for a period, its royalty and marketing fee
 //!   invoiced once.
+//! * `transfer`: one store asking another for stock, sent through the goods in transit and taken
+//!   in, each move an ERP stock entry.
+//! * `site`: the portal's "Your franchise", where a franchisee reports its sales and sees the fees
+//!   invoiced on them.
 //!
 //! This app's own design; no code was copied (docs/PROVENANCE.md). Hooks are registered per entity,
 //! so a workspace without the `retail` package never runs them.
 
 mod collect;
 mod franchise;
+mod site;
+mod transfer;
 
 use ferrum_domain::reports::ReportSource;
 use ferrum_kernel::{Doc, HookRegistry, Kernel, Result};
@@ -29,12 +35,14 @@ pub fn packages() -> std::result::Result<Vec<ferrum_meta::Package>, ferrum_meta:
     ferrum_meta::catalog::load_embedded(EMBEDDED)
 }
 
-/// Registers this app's document hooks.
+/// Registers this app's document hooks, and the portal's "Your franchise".
 pub fn register(hooks: &mut HookRegistry) {
     hooks
         .register("CollectOrder", Arc::new(collect::CollectHook))
         .register("Franchisee", Arc::new(franchise::FranchiseeHook))
-        .register("RoyaltyReport", Arc::new(franchise::ReportHook));
+        .register("RoyaltyReport", Arc::new(franchise::ReportHook))
+        .register("StoreTransfer", Arc::new(transfer::TransferHook));
+    hooks.add_site("retail", Arc::new(site::RetailSite));
 }
 
 /// This app's reports: none of its own yet.
