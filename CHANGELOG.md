@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3
+
+Found walking the franchise portal on 7 November: Your franchise shows a report's sales and fees as
+money ("sales 1,00,000.00 · fees 7,000.00"), not as raw numbers. Rebuilt with Ferrum-Frontend 922fcfb:
+an action's dialog says every refusal, and an action with parameters and a confirmation asks once.
+
 ## 0.3.2
 
 Ship from store works for an order that names no warehouse, as an order from the web does. Its
