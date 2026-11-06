@@ -25,7 +25,15 @@ fn on_the_way(line: &Doc) -> Decimal {
 
 /// A submitted stock entry taking `lines` (item, quantity) out of `from` and into `to`, or out of
 /// stock when `to` is none (lost): its id.
-async fn move_stock(k: &Kernel, ctx: &Ctx, tx: &mut Tx, company: Uuid, lines: &[(Uuid, Decimal)], from: Uuid, to: Option<Uuid>, remarks: &str) -> Result<Uuid> {
+async fn move_stock(
+    k: &Kernel,
+    ctx: &Ctx,
+    tx: &mut Tx,
+    company: Uuid,
+    lines: &[(Uuid, Decimal)],
+    (from, to): (Uuid, Option<Uuid>),
+    remarks: &str,
+) -> Result<Uuid> {
     let items: Vec<Value> = lines
         .iter()
         .map(|(item, qty)| json!({"item": item.to_string(), "qty": money(*qty), "source_warehouse": from.to_string(), "target_warehouse": to.map(|t| t.to_string())}))
@@ -111,7 +119,7 @@ impl DocHook for TransferHook {
                     return Err(Error::invalid(format!("the store does not hold it: {}", short.join(", "))));
                 }
                 let sent: Vec<(Uuid, Decimal)> = lines.iter().filter_map(|l| Some((id(l, "item")?, d(l, "qty")))).collect();
-                let entry = move_stock(hc.kernel, &system, hc.tx, company, &sent, from, Some(transit.unwrap_or(to)), &remarks).await?;
+                let entry = move_stock(hc.kernel, &system, hc.tx, company, &sent, (from, Some(transit.unwrap_or(to))), &remarks).await?;
                 match transit {
                     Some(_) => json!({"status": "Sent", "sent_at": now, "sent_entry": entry.to_string()}),
                     // Nowhere in between: it arrives as it leaves.
@@ -176,7 +184,7 @@ impl DocHook for TransferHook {
                 if moving.is_empty() {
                     return Err(Error::invalid("nothing of it is still on the way"));
                 }
-                let entry = move_stock(hc.kernel, &system, hc.tx, company, &moving, transit, (!lost).then_some(to), &remarks).await?;
+                let entry = move_stock(hc.kernel, &system, hc.tx, company, &moving, (transit, (!lost).then_some(to)), &remarks).await?;
                 let done = lines.iter().all(|l| on_the_way(l) <= Decimal::ZERO);
                 let short = lines.iter().any(|l| d(l, "lost_qty") > Decimal::ZERO);
                 let names: HashMap<Uuid, String> =
