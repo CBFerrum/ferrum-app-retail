@@ -111,7 +111,7 @@ async fn return_notes(hc: &mut HookCtx<'_>, system: &Ctx, invoice: Uuid, store: 
         .await?;
         let notes: Vec<Uuid> = sent.iter().map(|x| x.0).collect();
         let came_back: Vec<(Uuid, Decimal)> = sqlx::query_as(
-            "select n.return_against, -sum(c.qty) from e_delivery_note__items c join e_delivery_note n on n.tenant_id = c.tenant_id and n.id = c.parent_id \
+            "select n.return_against, sum(c.qty) from e_delivery_note__items c join e_delivery_note n on n.tenant_id = c.tenant_id and n.id = c.parent_id \
              where c.tenant_id = $1 and n.docstatus = 1 and coalesce(n.is_return, false) and n.return_against = any($2) and c.item = $3 group by n.return_against",
         )
         .bind(tenant)
@@ -163,7 +163,8 @@ async fn return_notes(hc: &mut HookCtx<'_>, system: &Ctx, invoice: Uuid, store: 
                         r.insert(f.to_string(), v.clone());
                     }
                 }
-                r.insert("qty".into(), money(-*q));
+                // A return delivery note counts what comes back, as Commerce's do.
+                r.insert("qty".into(), money(*q));
                 r.insert("warehouse".into(), json!(store.to_string()));
                 Some(Value::Object(r))
             })
