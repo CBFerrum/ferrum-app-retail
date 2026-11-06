@@ -7,6 +7,9 @@ delivery note was made by ERP's "Create Delivery Note", which copies the order's
 ERP refused a note whose lines had none. It is now mapped from the order the same way, every
 line from the store. Found walking it in a browser on 6 November.
 
+A collect order for an order already collected, or being shipped from a store, says so first,
+whichever store it names.
+
 ## 0.3.1
 
 Rebuilt with Ferrum-Frontend a76295e: its pages show times on a person's own clock when they chose one on their Account page, while today and due dates stay on the workspace's day. Its pages count today on the workspace's day, not UTC's, so the day's figures are right in the evening west of Greenwich and the early morning east of it.

@@ -133,9 +133,7 @@ impl DocHook for CollectHook {
         if docstatus != 1 {
             return Err(Error::field("sales_order", "is not submitted yet"));
         }
-        if ships_from != id(doc, "store") {
-            return Err(Error::field("store", "is not where the order ships from"));
-        }
+        // The order first: collected or shipped already, whichever store is named.
         let other: Option<String> = sqlx::query_scalar(
             "select number from e_collect_order where tenant_id = $1 and sales_order = $2 and id <> $3 and status in ('Ordered', 'Ready', 'Collected') limit 1",
         )
@@ -149,6 +147,9 @@ impl DocHook for CollectHook {
         }
         if let Some(n) = shipping(hc.tx, hc.ctx.tenant, order, None).await? {
             return Err(Error::field("sales_order", format!("is shipped from a store under {n}")));
+        }
+        if ships_from != id(doc, "store") {
+            return Err(Error::field("store", "is not where the order ships from"));
         }
         Ok(())
     }
