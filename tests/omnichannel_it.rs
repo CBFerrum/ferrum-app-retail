@@ -193,7 +193,14 @@ async fn scenario() {
     let big = uid(&t.insert(&a, "SalesOrder", order(dc, json!([line(kettle, "10", "1500")]))).await["id"]);
     t.k.submit(&a, "SalesOrder", big, None).await.unwrap();
     refused(t.k.insert(&associate, "StoreShipment", obj(json!({"sales_order": big.to_string()}))).await, "invalid", "no store holds all of it");
-    let so1 = uid(&t.insert(&a, "SalesOrder", order(dc, json!([line(kettle, "2", "1500")]))).await["id"]);
+    // An order from the web names no warehouse: it ships from a store all the same.
+    let so1 = uid(&t
+        .insert(
+            &a,
+            "SalesOrder",
+            json!({"company": company.to_string(), "customer": ana.to_string(), "delivery_date": "2026-12-31", "items": [line(kettle, "2", "1500")]}),
+        )
+        .await["id"]);
     t.k.submit(&a, "SalesOrder", so1, None).await.unwrap();
     refused(
         t.k.insert(&associate, "StoreShipment", obj(json!({"sales_order": so1.to_string(), "store": dc.to_string()}))).await,
