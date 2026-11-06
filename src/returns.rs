@@ -250,22 +250,27 @@ impl DocHook for ReturnHook {
                 let draft = hc.kernel.get_tx(&system, hc.tx, "SalesInvoice", note, false).await?;
                 let mut left: HashMap<Uuid, Decimal> = back.iter().map(|(item, _, q)| (*item, *q)).collect();
                 let mut lines = vec![];
-                for mut l in rows(&draft, "items") {
+                for l in rows(&draft, "items") {
                     let Some(want) = id(&l, "item").and_then(|item| left.get_mut(&item)) else { continue };
                     let q = (*want).min(-d(&l, "qty"));
                     if q <= Decimal::ZERO {
                         continue;
                     }
                     *want -= q;
-                    l.insert("qty".into(), money(-q));
+                    let mut line = json!({"id": l.get("id"), "qty": money(-q)});
                     if delivered_by_invoice {
-                        l.insert("warehouse".into(), json!(store.to_string()));
+                        line["warehouse"] = json!(store.to_string());
                     }
-                    lines.push(Value::Object(l));
+                    lines.push(line);
                 }
                 let remarks = format!("Brought back to a store: {}", s(doc, "number").unwrap_or_default());
-                let patch = json!({"items": lines, "update_stock": delivered_by_invoice,
-                                   "set_warehouse": delivered_by_invoice.then(|| store.to_string()), "remarks": remarks});
+                let mut patch = json!({"items": lines, "update_stock": delivered_by_invoice,
+                                       "set_warehouse": delivered_by_invoice.then(|| store.to_string()), "remarks": remarks});
+                // A fixed charge belongs to the whole invoice, not to what comes back of it.
+                let taxes = rows(&draft, "taxes");
+                if taxes.iter().any(|t| s(t, "charge_type") == Some("Actual")) {
+                    patch["taxes"] = Value::Array(taxes.into_iter().filter(|t| s(t, "charge_type") != Some("Actual")).map(Value::Object).collect());
+                }
                 hc.kernel.update_tx(&system, hc.tx, "SalesInvoice", note, obj(patch), None).await?;
                 let notes = if delivered_by_invoice { vec![] } else { return_notes(hc, &system, invoice, store, &back).await? };
                 let credited = hc.kernel.submit_tx(&system, hc.tx, "SalesInvoice", note, None).await?;

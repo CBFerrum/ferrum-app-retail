@@ -143,13 +143,7 @@ impl DocHook for ShipHook {
                 let note: Uuid =
                     made.get("id").and_then(Value::as_str).and_then(|v| v.parse().ok()).ok_or_else(|| Error::internal("no delivery note was made"))?;
                 let draft = hc.kernel.get_tx(&system, hc.tx, "DeliveryNote", note, false).await?;
-                let items: Vec<Value> = rows(&draft, "items")
-                    .into_iter()
-                    .map(|mut l| {
-                        l.insert("warehouse".into(), json!(store.to_string()));
-                        Value::Object(l)
-                    })
-                    .collect();
+                let items: Vec<Value> = rows(&draft, "items").iter().map(|l| json!({"id": l.get("id"), "warehouse": store.to_string()})).collect();
                 let patch = json!({"set_warehouse": store.to_string(), "transporter": carrier, "items": items});
                 hc.kernel.update_tx(&system, hc.tx, "DeliveryNote", note, obj(patch), None).await?;
                 let submitted = hc.kernel.submit_tx(&system, hc.tx, "DeliveryNote", note, None).await?;
