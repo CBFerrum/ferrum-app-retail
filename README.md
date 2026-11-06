@@ -65,6 +65,7 @@ cd ui && npm run build && npm run check
 
 | Version | Highlights |
 |---|---|
+| **0.2.1** | Rebuilt with Ferrum-Frontend bb60115: empty numbers read as the server reads them; settings open as their record. |
 | **0.2.0** | Transfers between stores through the goods in transit; franchisees reporting their sales on the portal. |
 | **0.1.3** | Rebuilt with Ferrum-Frontend 00dea07: a workflow state's kept fields are read-only, its needed ones required. |
 | **0.1.2** | Rebuilt with Ferrum-Frontend daeadda: actions say what they did. |
