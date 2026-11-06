@@ -20,8 +20,10 @@ describe("transfers and franchise reports", () => {
       { id: "a", status: "Requested" },
       { id: "b", status: "Sent" },
       { id: "c", status: "Received" },
+      { id: "d", status: "Part Received" },
+      { id: "e", status: "Closed Short" },
     ]);
-    expect([t.asked.map((x) => x.id), t.onTheWay.map((x) => x.id)]).toEqual([["a"], ["b"]]);
+    expect([t.asked.map((x) => x.id), t.onTheWay.map((x) => x.id)]).toEqual([["a"], ["b", "d"]]);
   });
 
   it("offers reports only under agreements begun", () => {

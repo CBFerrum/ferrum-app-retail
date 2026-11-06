@@ -1,8 +1,8 @@
 id: retail
 name: Retail
-version: 0.2.2
+version: 0.3.0
 publisher: cbferrum
-summary: "Click and collect with a pickup code, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
+summary: "Click and collect, ship from store, returns to any store, stock by store, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
 description: README.md
 categories: [commerce, inventory]
 license: AGPL-3.0-only
@@ -14,7 +14,7 @@ platform: ">=0.3.2, <0.4"
 requires: {erp: ">=0.1"}
 packages: [retail]
 uninstall: ask
-# Its own interface at /retail/: collections waiting, and royalties to invoice.
+# Its own interface at /retail/: collections, shipments and returns waiting, transfers, and royalties to invoice.
 ui:
   dist: ui/dist
 contributes:
@@ -22,7 +22,7 @@ contributes:
     - id: retail
       route: retail
       title: Retail
-      description: Click and collect, and franchises
+      description: Click and collect, ship from store, returns, and franchises
       icon: store
       color: "#be185d"
       roles: [Retail Manager, Store Associate]
@@ -31,6 +31,8 @@ contributes:
   shell.create:
     - {id: collect, label: Click and Collect, path: retail/e/CollectOrder/new, entity: CollectOrder}
     - {id: transfer, label: Store Transfer, path: retail/e/StoreTransfer/new, entity: StoreTransfer}
+    - {id: ship, label: Ship From Store, path: retail/e/StoreShipment/new, entity: StoreShipment}
+    - {id: return, label: Store Return, path: retail/e/StoreReturn/new, entity: StoreReturn}
   # The workspace's portal: a franchisee's agreements, their sales reported and the fees on them.
   shell.portal:
     - {id: franchise, title: Your franchise, description: "Report your sales, and see the fees invoiced on them"}
