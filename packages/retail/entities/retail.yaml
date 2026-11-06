@@ -108,7 +108,7 @@
     - {name: send_transfer, label: Send It, permission: write, condition: "doc.status == 'Requested'"}
     - {name: receive_transfer, label: It Arrived, permission: write, condition: "doc.status == 'Sent' || doc.status == 'Part Received'"}
     - {name: receive_part, label: Some Of It Arrived, permission: write, condition: "doc.status == 'Sent' || doc.status == 'Part Received'",
-       params: [{name: item, type: link, to: Item, required: true}, {name: qty, type: decimal, label: How Many, required: true}]}
+       params: [{name: item, type: link, to: Item, label: Item, required: true}, {name: qty, type: decimal, label: How Many, required: true}]}
     - {name: write_off_rest, label: The Rest Is Lost, permission: write, condition: "doc.status == 'Sent' || doc.status == 'Part Received'",
        params: [{name: why, type: text, label: What Happened, required: true}]}
     - {name: reject_transfer, label: Turn It Down, permission: write, condition: "doc.status == 'Requested'", params: [{name: why, type: text, label: Why, required: true}]}
