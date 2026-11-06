@@ -1,6 +1,6 @@
 id: retail
 name: Retail
-version: 0.2.1
+version: 0.2.2
 publisher: cbferrum
 summary: "Click and collect with a pickup code, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
 description: README.md
