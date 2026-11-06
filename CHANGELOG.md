@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.3.0
+
+Stores selling as one (FERRUM-INDUSTRY-003).
+
+- **Stores:** a warehouse marked Is A Store (on the warehouse, added by Retail) is a shop.
+- **Ship From Store:** an online order shipped to the customer from a store's stock. Left empty,
+  its store is the one holding the most of it among the stores holding all of it; a named one must
+  be a store of the order's company. Ship It makes the order's delivery note from that store and
+  submits it, keeping the carrier and tracking number. An order is shipped from a store once, and
+  never also collected in one.
+- **The endless aisle:** the Stock by Store report says where an item is, the stores first and the
+  most first. Bring It From Another Store, on a click and collect, asks a store for what the
+  collecting store lacks, as a store transfer.
+- **Store Return:** goods bought online or in another store, brought back to any store against
+  their invoice, never more of an item than it sold less what came back already. Take It Back
+  credits the invoice for them through ERP, at what was paid, and puts them in that store's stock
+  at the cost they left at: by the credit note when the invoice delivered them, or else by a return
+  delivery note against each note that did.
+- **Transfers in parts:** Some Of It Arrived takes in what arrived of an item; It Arrived takes the
+  rest. The Rest Is Lost writes off what never arrived out of the goods in transit, saying what
+  happened, and closes the transfer short. Each line keeps what arrived and what was lost.
+- **Click and collect counts what is left to deliver** of the order's stock items, in stock units:
+  a service on the order no longer holds it back.
+- The stores page lists orders to ship from a store and returns to take back, and links Stock by
+  Store.
+
 ## 0.2.2
 
 Rebuilt with Ferrum-Frontend 24c3951: its pages show times on the workspace's clock, naming the zone when it is not the browser's, a draft numbered on submit is headed as a draft, and a record of an app that is not installed says so.

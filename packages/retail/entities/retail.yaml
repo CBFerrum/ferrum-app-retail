@@ -27,7 +27,10 @@
     - {name: ready_at, type: datetime, read_only: true, no_copy: true}
     - {name: collected_at, type: datetime, read_only: true, no_copy: true}
     - {name: delivery_note, type: link, to: DeliveryNote, read_only: true, no_copy: true}
+    - {name: transfer, type: link, to: StoreTransfer, read_only: true, no_copy: true, label: Brought By, description: "The transfer bringing what the store lacked from another store"}
   actions:
+    - {name: bring_from, label: Bring It From Another Store, permission: write, condition: "doc.status == 'Ordered'",
+       params: [{name: from_store, type: link, to: Warehouse, label: From, required: true}]}
     - {name: make_ready, label: It Is Ready, permission: write, condition: "doc.status == 'Ordered'"}
     - {name: hand_over, label: Hand It Over, permission: write, condition: "doc.status == 'Ready'", params: [{name: code, type: data, label: Pickup Code, required: true}]}
     - {name: cancel_collect, label: Cancel It, permission: write, condition: "doc.status == 'Ordered' || doc.status == 'Ready'"}
@@ -79,6 +82,8 @@
     - {name: item, type: link, to: Item, required: true, in_list: true}
     - {name: item_name, type: data, fetch_from: item.item_name, read_only: true, in_list: true}
     - {name: qty, type: decimal, required: true, in_list: true}
+    - {name: received_qty, type: decimal, read_only: true, no_copy: true, in_list: true, label: Arrived}
+    - {name: lost_qty, type: decimal, read_only: true, no_copy: true, label: Lost On The Way}
 
 - name: StoreTransfer
   label: Store Transfer
@@ -86,22 +91,81 @@
   kind: master
   module: retail
   title_field: to_store
-  description: One store asking another for stock. Sent, the stock leaves the giving store for the goods in transit; received, it arrives at the store that asked. A store sends only what it holds.
+  description: One store asking another for stock. Sent, the stock leaves the giving store for the goods in transit; it arrives at the store that asked whole or in parts, and what never arrives is written off. A store sends only what it holds.
   fields:
     - {name: from_store, type: link, to: Warehouse, required: true, link_filters: {is_group: false}, in_list: true, in_filter: true, label: From}
     - {name: to_store, type: link, to: Warehouse, required: true, link_filters: {is_group: false}, in_list: true, in_filter: true, label: To}
     - {name: items, type: table, of: StoreTransferItem, required: true}
-    - {name: status, type: select, options: [Requested, Sent, Received, Rejected, Cancelled], default: Requested, read_only: true, no_copy: true, in_list: true, in_filter: true}
+    - {name: status, type: select, options: [Requested, Sent, Part Received, Received, Closed Short, Rejected, Cancelled], default: Requested, read_only: true, no_copy: true, in_list: true, in_filter: true}
     - {name: requested_by, type: email, read_only: true, no_copy: true, in_list: true}
     - {name: sent_at, type: datetime, read_only: true, no_copy: true}
     - {name: received_at, type: datetime, read_only: true, no_copy: true}
     - {name: sent_entry, type: link, to: StockEntry, read_only: true, no_copy: true, label: Sent By}
-    - {name: received_entry, type: link, to: StockEntry, read_only: true, no_copy: true, label: Received By}
+    - {name: received_entry, type: link, to: StockEntry, read_only: true, no_copy: true, label: Received By, description: "The last stock entry that took some of it in"}
+    - {name: lost_entry, type: link, to: StockEntry, read_only: true, no_copy: true, label: Written Off By}
     - {name: note, type: text}
   actions:
     - {name: send_transfer, label: Send It, permission: write, condition: "doc.status == 'Requested'"}
-    - {name: receive_transfer, label: It Arrived, permission: write, condition: "doc.status == 'Sent'"}
+    - {name: receive_transfer, label: It Arrived, permission: write, condition: "doc.status == 'Sent' || doc.status == 'Part Received'"}
+    - {name: receive_part, label: Some Of It Arrived, permission: write, condition: "doc.status == 'Sent' || doc.status == 'Part Received'",
+       params: [{name: item, type: link, to: Item, label: Item, required: true}, {name: qty, type: decimal, label: How Many, required: true}]}
+    - {name: write_off_rest, label: The Rest Is Lost, permission: write, condition: "doc.status == 'Sent' || doc.status == 'Part Received'",
+       params: [{name: why, type: text, label: What Happened, required: true}]}
     - {name: reject_transfer, label: Turn It Down, permission: write, condition: "doc.status == 'Requested'", params: [{name: why, type: text, label: Why, required: true}]}
     - {name: cancel_transfer, label: Cancel It, permission: write, condition: "doc.status == 'Requested'"}
   numbering: {template: "ST-{YYYY}-{seq:5}"}
   list: {columns: [number, from_store, to_store, status, requested_by], sort: created_at desc}
+
+- name: StoreShipment
+  label: Ship From Store
+  label_plural: Ship From Store
+  kind: master
+  module: retail
+  title_field: sales_order
+  description: An order shipped to the customer from a store's stock, rather than from the distribution centre. Left empty, its store is the one holding the most of it among those holding all of it.
+  fields:
+    - {name: sales_order, type: link, to: SalesOrder, required: true, in_list: true, in_filter: true}
+    - {name: store, type: link, to: Warehouse, link_filters: {is_group: false}, in_list: true, in_filter: true, description: "The store it ships from: one holding all of it when left empty"}
+    - {name: status, type: select, options: [To Ship, Shipped, Cancelled], default: To Ship, read_only: true, no_copy: true, in_list: true, in_filter: true}
+    - {name: carrier, type: data}
+    - {name: tracking_no, type: data, label: Tracking Number, in_list: true}
+    - {name: shipped_at, type: datetime, read_only: true, no_copy: true}
+    - {name: delivery_note, type: link, to: DeliveryNote, read_only: true, no_copy: true}
+  actions:
+    - {name: ship_it, label: Ship It, permission: write, condition: "doc.status == 'To Ship'",
+       params: [{name: carrier, type: data, label: Carrier}, {name: tracking_no, type: data, label: Tracking Number}]}
+    - {name: cancel_shipment, label: Cancel It, permission: write, condition: "doc.status == 'To Ship'"}
+  numbering: {template: "SFS-{YYYY}-{seq:5}"}
+  list: {columns: [number, sales_order, store, status, tracking_no], sort: created_at desc}
+
+- name: StoreReturnItem
+  label: Return Line
+  kind: child
+  fields:
+    - {name: item, type: link, to: Item, required: true, in_list: true}
+    - {name: item_name, type: data, fetch_from: item.item_name, read_only: true, in_list: true}
+    - {name: qty, type: decimal, required: true, in_list: true}
+    - {name: reason, type: select, options: [Changed Mind, Damaged, Faulty, Wrong Item, Other], default: Changed Mind, in_list: true}
+
+- name: StoreReturn
+  label: Store Return
+  label_plural: Store Returns
+  kind: master
+  module: retail
+  title_field: customer
+  description: Goods bought online or in another store, brought back to any store. Taken back, they go into that store's stock at the cost they left at, and the invoice is credited for them.
+  fields:
+    - {name: sales_invoice, type: link, to: SalesInvoice, required: true, in_list: true, in_filter: true, label: Invoice}
+    - {name: customer, type: link, to: Customer, read_only: true, in_list: true, in_filter: true}
+    - {name: store, type: link, to: Warehouse, required: true, link_filters: {is_group: false}, in_list: true, in_filter: true}
+    - {name: items, type: table, of: StoreReturnItem, required: true}
+    - {name: status, type: select, options: [Draft, Taken Back, Cancelled], default: Draft, read_only: true, no_copy: true, in_list: true, in_filter: true}
+    - {name: credit_note, type: link, to: SalesInvoice, read_only: true, no_copy: true}
+    - {name: goods_back_by, type: data, read_only: true, no_copy: true, label: Goods Back By, description: "The return delivery notes that took the goods into the store, when delivery notes sent them"}
+    - {name: taken_at, type: datetime, read_only: true, no_copy: true}
+    - {name: taken_by, type: email, read_only: true, no_copy: true}
+  actions:
+    - {name: take_back, label: Take It Back, permission: write, condition: "doc.status == 'Draft'"}
+    - {name: cancel_return, label: Cancel It, permission: write, condition: "doc.status == 'Draft'"}
+  numbering: {template: "SR-{YYYY}-{seq:5}"}
+  list: {columns: [number, sales_invoice, customer, store, status], sort: created_at desc}

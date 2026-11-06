@@ -1,22 +1,32 @@
 package: retail
 version: 0.1.0
 label: Retail
-description: "Click and collect with a pickup code from the store an order ships from, and franchise royalties invoiced through ERP"
+description: "Click and collect, ship from store, returns to any store, transfers between stores, and franchise royalties invoiced through ERP"
 depends: [core, selling, inventory, accounting]
+field_prefix: retail_
+
+overlays:
+  - entity: Warehouse
+    ops:
+      - {op: add_field, field: {name: retail_store, type: check, label: Is A Store, in_filter: true,
+          description: "A shop: it ships online orders, takes returns, and is counted in stock by store"}}
 
 modules:
   - name: retail
     label: Retail
     icon: store
     order: 56
-    items: [CollectOrder, StoreTransfer, Franchisee, RoyaltyReport, RetailSettings]
+    items: [CollectOrder, StoreShipment, StoreReturn, StoreTransfer, Franchisee, RoyaltyReport, RetailSettings]
 
 roles:
   - name: Retail Manager
-    description: Runs click and collect across the stores, and franchises and their royalties.
+    description: Runs click and collect, shipping from stores and returns across the stores, and franchises and their royalties.
     permissions:
       - {entity: RetailSettings, read: true, write: true, create: true}
       - {entity: CollectOrder, read: true, write: true, create: true}
+      - {entity: StoreShipment, read: true, write: true, create: true, export: true}
+      - {entity: StoreReturn, read: true, write: true, create: true, export: true}
+      - {entity: DeliveryNote, read: true}
       - {entity: Franchisee, read: true, write: true, create: true}
       - {entity: RoyaltyReport, read: true, write: true, create: true, export: true}
       - {entity: Customer, read: true}
@@ -27,11 +37,15 @@ roles:
       - {entity: StoreTransfer, read: true, write: true, create: true, export: true}
       - {entity: StockEntry, read: true}
   - name: Store Associate
-    description: Gets click and collect orders ready and hands them over against their code, and asks other stores for stock, sends it and takes it in.
+    description: Gets click and collect orders ready and hands them over against their code, ships orders from the store, takes returns, and asks other stores for stock, sends it and takes it in.
     permissions:
       - {entity: CollectOrder, read: true, write: true, create: true}
+      - {entity: StoreShipment, read: true, write: true, create: true}
+      - {entity: StoreReturn, read: true, write: true, create: true}
       - {entity: StoreTransfer, read: true, write: true, create: true}
       - {entity: SalesOrder, read: true}
+      - {entity: SalesInvoice, read: true}
+      - {entity: DeliveryNote, read: true}
       - {entity: Warehouse, read: true}
       - {entity: Item, read: true}
 
@@ -40,3 +54,4 @@ roles:
 personal_data:
   - {entity: RoyaltyReport, match: reported_by, erase: [reported_by]}
   - {entity: StoreTransfer, match: requested_by, erase: [requested_by]}
+  - {entity: StoreReturn, match: taken_by, erase: [taken_by]}
