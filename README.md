@@ -97,6 +97,7 @@ cd ui && npm run build && npm run check
 
 | Version | Highlights |
 |---|---|
+| **0.3.5** | Rebuilt with Ferrum-Frontend 63280d3: right to left, pages mirror; the records pages' words in Arabic and Hindi. |
 | **0.3.4** | Rebuilt with Ferrum-Frontend a64416a: a box whose default is 1 shows ticked. |
 | **0.3.3** | The franchise portal shows sales and fees as money. |
 | **0.3.2** | Ship from store works for an order that names no warehouse, as web orders do. |
