@@ -30,12 +30,12 @@ impl ReportSource for AisleReports {
         let item = Params { raw: params }.uuid("item")?;
         let mut tx = read_tx(k, ctx).await?;
         let found: Vec<(String, Option<String>, String, bool, Decimal)> = sqlx::query_as(
-            "select i.item_code, i.item_name, w.warehouse_name, coalesce(w.retail_store, false), sum(b.qty) \
+            "select i.item_code, i.item_name, w.warehouse_name, coalesce((w.ext->>'retail_store')::boolean, false), sum(b.qty) \
              from stock_balance b join e_warehouse w on w.tenant_id = b.tenant_id and w.id = b.warehouse_id \
              join e_item i on i.tenant_id = b.tenant_id and i.id = b.item_id \
              where b.tenant_id = $1 and ($2::uuid is null or b.item_id = $2) and not coalesce(w.disabled, false) \
-             group by i.item_code, i.item_name, w.warehouse_name, w.retail_store having sum(b.qty) > 0 \
-             order by i.item_code, coalesce(w.retail_store, false) desc, sum(b.qty) desc, w.warehouse_name limit $3",
+             group by i.item_code, i.item_name, w.warehouse_name, 4 having sum(b.qty) > 0 \
+             order by 1, 4 desc, 5 desc, 3 limit $3",
         )
         .bind(ctx.tenant)
         .bind(item)

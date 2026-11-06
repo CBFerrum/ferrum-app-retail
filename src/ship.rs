@@ -24,7 +24,7 @@ async fn pick_store(tx: &mut Tx, tenant: Uuid, company: Option<Uuid>, need: &[(U
     let held: Vec<(Uuid, String, Uuid, Decimal)> = sqlx::query_as(
         "select w.id, w.warehouse_name, b.item_id, sum(b.qty) from e_warehouse w \
          join stock_balance b on b.tenant_id = w.tenant_id and b.warehouse_id = w.id \
-         where w.tenant_id = $1 and w.company is not distinct from $2 and coalesce(w.retail_store, false) and not coalesce(w.disabled, false) \
+         where w.tenant_id = $1 and w.company is not distinct from $2 and coalesce((w.ext->>'retail_store')::boolean, false) and not coalesce(w.disabled, false) \
          and b.item_id = any($3) group by w.id, w.warehouse_name, b.item_id",
     )
     .bind(tenant)
