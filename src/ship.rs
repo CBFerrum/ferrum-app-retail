@@ -1,15 +1,16 @@
 //! Ship from store. An order is shipped to its customer from a store's stock rather than from the
 //! distribution centre: from the store someone names, or else from the one holding the most of it
-//! among the stores holding all of it. Shipped, the order's delivery note is made from that store
-//! and submitted, so the goods leave its stock, with the carrier and tracking number kept. An order
-//! is either shipped from a store or collected in one, never both.
+//! among the stores holding all of it. Shipped, the order's delivery note is made from that store,
+//! every line, whatever warehouse the order named or did not, and submitted, so the goods leave its
+//! stock, with the carrier and tracking number kept. An order is either shipped from a store or
+//! collected in one, never both.
 
 use crate::collect::{is_store, say, shipping, short_of, to_deliver};
 use crate::obj;
 use async_trait::async_trait;
 use chrono::Utc;
-use ferrum_domain::flow::created;
-use ferrum_domain::util::{elevated, id, rows, s};
+use ferrum_domain::flow::{MapSpec, created, map_document_with, shared_line_fields};
+use ferrum_domain::util::{elevated, id, s};
 use ferrum_kernel::{Doc, DocHook, Error, HookCtx, Result, Tx};
 use rust_decimal::Decimal;
 use serde_json::{Value, json};
@@ -17,6 +18,11 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 pub struct ShipHook;
+
+/// What a delivery note takes from its order, as ERP's own "Create Delivery Note" maps it; the
+/// warehouse is the store's.
+const HEADER: &[&str] = &["company", "currency", "conversion_rate", "tax_template", "discount_percent", "project", "customer", "price_list", "po_no"];
+const LINE: &[&str] = &["item", "uom", "price_list_rate", "discount_percent", "batch_no", "serial_no"];
 
 /// The store of `company` holding the most of `need` among those holding all of it.
 async fn pick_store(tx: &mut Tx, tenant: Uuid, company: Option<Uuid>, need: &[(Uuid, String, Decimal)]) -> Result<Option<Uuid>> {
@@ -138,14 +144,17 @@ impl DocHook for ShipHook {
                     params.get(k).and_then(Value::as_str).map(str::trim).filter(|v| !v.is_empty()).map(str::to_string).or_else(|| s(doc, k).map(str::to_string))
                 };
                 let (carrier, tracking) = (given("carrier"), given("tracking_no"));
-                // The order's delivery note, from this store.
-                let made = hc.kernel.run_action_tx(&system, hc.tx, "SalesOrder", order, "make_delivery_note", &json!({})).await?;
-                let note: Uuid =
-                    made.get("id").and_then(Value::as_str).and_then(|v| v.parse().ok()).ok_or_else(|| Error::internal("no delivery note was made"))?;
-                let draft = hc.kernel.get_tx(&system, hc.tx, "DeliveryNote", note, false).await?;
-                let items: Vec<Value> = rows(&draft, "items").iter().map(|l| json!({"id": l.get("id"), "warehouse": store.to_string()})).collect();
-                let patch = json!({"set_warehouse": store.to_string(), "transporter": carrier, "items": items});
-                hc.kernel.update_tx(&system, hc.tx, "DeliveryNote", note, obj(patch), None).await?;
+                // The order's delivery note, every line from this store: ERP's own copies the order's
+                // warehouse, and an order from the web names none.
+                let spec = MapSpec { done_field: "delivered_qty", link_field: "sales_order", line_field: "so_line", header: HEADER, line_fields: LINE };
+                let mut input = map_document_with(&so, &spec, &shared_line_fields(&hc.ctx.schema, "SalesOrder", "DeliveryNote"))?;
+                for line in input.get_mut("items").and_then(Value::as_array_mut).into_iter().flatten().filter_map(Value::as_object_mut) {
+                    line.insert("warehouse".into(), json!(store.to_string()));
+                }
+                input.insert("set_warehouse".into(), json!(store.to_string()));
+                input.insert("transporter".into(), json!(carrier));
+                let draft = hc.kernel.insert_tx(&system, hc.tx, "DeliveryNote", input).await?;
+                let note = id(&draft, "id").ok_or_else(|| Error::internal("no delivery note was made"))?;
                 let submitted = hc.kernel.submit_tx(&system, hc.tx, "DeliveryNote", note, None).await?;
                 let values = json!({"status": "Shipped", "shipped_at": Utc::now().to_rfc3339(), "delivery_note": note.to_string(),
                                     "carrier": carrier, "tracking_no": tracking});

@@ -97,6 +97,7 @@ cd ui && npm run build && npm run check
 
 | Version | Highlights |
 |---|---|
+| **0.3.2** | Ship from store works for an order that names no warehouse, as web orders do. |
 | **0.3.1** | Rebuilt with Ferrum-Frontend a76295e: times on a person's own clock when they chose one. Today is the workspace's day, not UTC's. |
 | **0.3.0** | Ship from store, returns to any store, Stock by Store and goods a collection lacks brought from another store; transfers taken in parts, what never arrived written off. |
 | **0.2.2** | Rebuilt with Ferrum-Frontend 24c3951: times on the workspace's clock; drafts headed as drafts. |
