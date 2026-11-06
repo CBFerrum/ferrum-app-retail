@@ -6,7 +6,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { api, errorMessage } from "@ferrum/client";
+import { api, errorMessage, todayIso } from "@ferrum/client";
 import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle } from "@ferrum/kit";
 
 const BASE = "/api/app/retail/portal";
@@ -47,7 +47,7 @@ export function FranchiseHome() {
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
   if (!q.data) return <PageLoading />;
   const { agreements } = q.data;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayIso();
   return (
     <div className="stack np-page">
       <div className="page-head">
@@ -106,7 +106,7 @@ export function FranchiseReport() {
   const [busy, setBusy] = useState(false);
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
   if (!q.data) return <PageLoading />;
-  const open = reportable(q.data.agreements, new Date().toISOString().slice(0, 10));
+  const open = reportable(q.data.agreements, todayIso());
   const chosen = agreement || open[0]?.id || "";
   const submit = async (e: FormEvent) => {
     e.preventDefault();
