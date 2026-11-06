@@ -18,6 +18,11 @@ use uuid::Uuid;
 
 pub struct TransferHook;
 
+/// A line as its table keeps it: its id and fields, nothing the record adds when read.
+fn table_row(line: &Doc) -> Doc {
+    ["id", "item", "item_name", "qty", "received_qty", "lost_qty"].iter().filter_map(|k| line.get(*k).map(|v| (k.to_string(), v.clone()))).collect()
+}
+
 /// What of a line is still on the way: sent, less what arrived and what was lost.
 fn on_the_way(line: &Doc) -> Decimal {
     d(line, "qty") - d(line, "received_qty") - d(line, "lost_qty")
@@ -131,7 +136,7 @@ impl DocHook for TransferHook {
                                 l
                             })
                             .collect();
-                        hc.kernel.set_child_rows_tx(&system, hc.tx, "StoreTransfer", "items", transfer, arrived).await?;
+                        hc.kernel.set_child_rows_tx(&system, hc.tx, "StoreTransfer", "items", transfer, arrived.iter().map(table_row).collect()).await?;
                         json!({"status": "Received", "sent_at": now, "received_at": now, "sent_entry": entry.to_string(), "received_entry": entry.to_string()})
                     }
                 }
@@ -189,7 +194,7 @@ impl DocHook for TransferHook {
                 let short = lines.iter().any(|l| d(l, "lost_qty") > Decimal::ZERO);
                 let names: HashMap<Uuid, String> =
                     lines.iter().filter_map(|l| Some((id(l, "item")?, s(l, "item_name").unwrap_or("an item").to_string()))).collect();
-                hc.kernel.set_child_rows_tx(&system, hc.tx, "StoreTransfer", "items", transfer, lines).await?;
+                hc.kernel.set_child_rows_tx(&system, hc.tx, "StoreTransfer", "items", transfer, lines.iter().map(table_row).collect()).await?;
                 let status = match (done, short) {
                     (false, _) => "Part Received",
                     (true, false) => "Received",
