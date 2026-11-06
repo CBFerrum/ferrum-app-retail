@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+Rebuilt with Ferrum-Frontend a64416a: a new record's box whose default is 1 shows ticked, as it is saved.
+
 ## 0.3.3
 
 Found walking the franchise portal on 7 November: Your franchise shows a report's sales and fees as
