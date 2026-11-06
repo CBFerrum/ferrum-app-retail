@@ -161,10 +161,10 @@ async fn scenario() {
     let company = uid(&t.insert(&a, "Company", json!({"company_name": "Chain Stores", "abbr": "CH", "default_currency": inr["id"]})).await["id"]);
     let products = t.find_one("ItemGroup", json!({"group_name": "Products"})).await;
     let nos = t.find_one("Uom", json!({"uom_name": "Nos"})).await;
-    let item =
-        |code: &str, name: &str| json!({"item_code": code, "item_name": name, "item_group": products["id"], "stock_uom": nos["id"], "is_stock_item": true});
-    let kettle = uid(&t.insert(&a, "Item", item("KETTLE", "Kettle")).await["id"]);
-    let toaster = uid(&t.insert(&a, "Item", item("TOASTER", "Toaster")).await["id"]);
+    // Sold at their standard rates: an order line's price is the price list's, never typed.
+    let item = |code: &str, name: &str, price: &str| json!({"item_code": code, "item_name": name, "item_group": products["id"], "stock_uom": nos["id"], "is_stock_item": true, "standard_rate": price});
+    let kettle = uid(&t.insert(&a, "Item", item("KETTLE", "Kettle", "1500")).await["id"]);
+    let toaster = uid(&t.insert(&a, "Item", item("TOASTER", "Toaster", "800")).await["id"]);
     let dc = uid(&t.find_one("Warehouse", json!({"warehouse_name": "Stores", "company": company.to_string()})).await["id"]);
     let store = |name: &str| json!({"warehouse_name": name, "company": company.to_string(), "retail_store": true});
     let downtown = uid(&t.insert(&a, "Warehouse", store("Downtown")).await["id"]);
