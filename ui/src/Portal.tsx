@@ -6,7 +6,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { api, errorMessage, formatValue, todayIso, t } from "@ferrum/client";
+import { api, errorMessage, formatValue, todayIso, t, isolate } from "@ferrum/client";
 import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle } from "@ferrum/kit";
 
 const BASE = "/api/app/retail/portal";
@@ -45,7 +45,7 @@ const useFranchise = () =>
   useQuery({ queryKey: ["retail", "portal", "franchise"], queryFn: ({ signal }) => api.get<{ agreements: Agreement[] }>(`${BASE}/franchise`, {}, signal) });
 
 export function FranchiseHome() {
-  useShellTitle("Your franchise");
+  useShellTitle(t("Your franchise"));
   const q = useFranchise();
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
   if (!q.data) return <PageLoading />;
@@ -70,9 +70,9 @@ export function FranchiseHome() {
         </EmptyState>
       ) : (
         agreements.map((a) => (
-          <section key={a.id} className="card card-pad stack" aria-label={`Agreement ${a.territory ?? ""}`}>
+          <section key={a.id} className="card card-pad stack" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
             <header className="row" style={{ justifyContent: "space-between" }}>
-              <h3>{a.territory || "Your agreement"}</h3>
+              <h3>{a.territory || t("Your agreement")}</h3>
               <span className="faint">
                 {t("{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "", royalty_percent: a.royalty_percent ?? "" })} {a.marketing_percent ?? 0}%
               </span>
@@ -83,8 +83,8 @@ export function FranchiseHome() {
               <ul className="stack">
                 {a.reports.map((r) => (
                   <li key={r.id}>
-                    {t("{number} · {period_from} to {period_to} · sales", { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "" })} {money(r.gross_sales)} {t("· fees")}{" "}
-                    {r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{money(r.total)}</a> : money(r.total)} <Badge tone={statusTone(r.status)}>{r.status}</Badge>
+                    {t("{number} · {period_from} to {period_to} · sales", { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "" })} {isolate(money(r.gross_sales))} {t("· fees")}{isolate(" ")}
+                    {r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : money(r.total)} <Badge tone={statusTone(r.status)}>{isolate(r.status ?? "")}</Badge>
                     {r.status === "Invoiced" && !r.issued && <span className="muted"> {t("· not issued yet")}</span>}
                   </li>
                 ))}
@@ -98,7 +98,7 @@ export function FranchiseHome() {
 }
 
 export function FranchiseReport() {
-  useShellTitle("Report your sales");
+  useShellTitle(t("Report your sales"));
   const navigate = useNavigate();
   const qc = useQueryClient();
   const q = useFranchise();
@@ -132,7 +132,7 @@ export function FranchiseReport() {
         <select className="input" value={chosen} onChange={(e) => setAgreement(e.target.value)}>
           {open.map((a) => (
             <option key={a.id} value={a.id}>
-              {a.territory || "Your agreement"} · {a.starts_on} to {a.ends_on}
+              {a.territory || t("Your agreement")} {t("· {starts_on} to {ends_on}", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "" })}
             </option>
           ))}
         </select>

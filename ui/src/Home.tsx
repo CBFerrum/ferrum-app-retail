@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { api, docPath, t as tr } from "@ferrum/client";
+import { api, docPath, t as tr, isolate } from "@ferrum/client";
 import { ErrorState, PageLoading, useShellTitle } from "@ferrum/kit";
 
 export interface Row {
@@ -29,12 +29,12 @@ function List({ title, list, entity, label }: { title: string; list: Row[]; enti
   return (
     <section className="card card-pad stack" aria-label={title}>
       <h3>
-        {title} ({list.length})
+        {isolate(title)} ({list.length})
       </h3>
       <ul className="stack">
         {list.map((r) => (
           <li key={r.id}>
-            <Link to={`/e/${entity}/${r.id}`}>{label(r)}</Link>
+            <Link to={`/e/${entity}/${r.id}`}>{isolate(label(r))}</Link>
           </li>
         ))}
       </ul>
@@ -43,7 +43,7 @@ function List({ title, list, entity, label }: { title: string; list: Row[]; enti
 }
 
 export function Home() {
-  useShellTitle("Retail");
+  useShellTitle(tr("Retail"));
   const q = useQuery({
     queryKey: ["retail", "home"],
     queryFn: async () => {
