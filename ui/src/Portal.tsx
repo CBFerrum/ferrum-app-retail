@@ -6,7 +6,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { api, errorMessage, formatValue, todayIso } from "@ferrum/client";
+import { api, errorMessage, formatValue, todayIso, t } from "@ferrum/client";
 import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle } from "@ferrum/kit";
 
 const BASE = "/api/app/retail/portal";
@@ -55,18 +55,18 @@ export function FranchiseHome() {
     <div className="stack np-page">
       <div className="page-head">
         <div>
-          <h1 className="page-title">Your franchise</h1>
-          <p className="page-sub">Your agreements, the sales you reported, and the fees on them.</p>
+          <h1 className="page-title">{t("Your franchise")}</h1>
+          <p className="page-sub">{t("Your agreements, the sales you reported, and the fees on them.")}</p>
         </div>
         {reportable(agreements, today).length > 0 && (
           <Link className="btn btn-primary btn-md" to="/new">
-            Report your sales
+            {t("Report your sales")}
           </Link>
         )}
       </div>
       {!agreements.length ? (
-        <EmptyState title="No franchise here yet" icon="store">
-          <p className="muted">When an agreement is made out to you, it is here with what you report under it.</p>
+        <EmptyState title={t("No franchise here yet")} icon="store">
+          <p className="muted">{t("When an agreement is made out to you, it is here with what you report under it.")}</p>
         </EmptyState>
       ) : (
         agreements.map((a) => (
@@ -74,18 +74,18 @@ export function FranchiseHome() {
             <header className="row" style={{ justifyContent: "space-between" }}>
               <h3>{a.territory || "Your agreement"}</h3>
               <span className="faint">
-                {a.starts_on} to {a.ends_on} · royalty {a.royalty_percent}% · marketing {a.marketing_percent ?? 0}%
+                {t("{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "", royalty_percent: a.royalty_percent ?? "" })} {a.marketing_percent ?? 0}%
               </span>
             </header>
             {a.reports.length === 0 ? (
-              <p className="muted">Nothing reported yet.</p>
+              <p className="muted">{t("Nothing reported yet.")}</p>
             ) : (
               <ul className="stack">
                 {a.reports.map((r) => (
                   <li key={r.id}>
-                    {r.number} · {r.period_from} to {r.period_to} · sales {money(r.gross_sales)} · fees{" "}
+                    {t("{number} · {period_from} to {period_to} · sales", { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "" })} {money(r.gross_sales)} {t("· fees")}{" "}
                     {r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{money(r.total)}</a> : money(r.total)} <Badge tone={statusTone(r.status)}>{r.status}</Badge>
-                    {r.status === "Invoiced" && !r.issued && <span className="muted"> · not issued yet</span>}
+                    {r.status === "Invoiced" && !r.issued && <span className="muted"> {t("· not issued yet")}</span>}
                   </li>
                 ))}
               </ul>
@@ -117,7 +117,7 @@ export function FranchiseReport() {
     try {
       await api.post(`${BASE}/reports`, { franchisee: chosen, period_from: from, period_to: to, gross_sales: sales.trim() });
       await qc.invalidateQueries({ queryKey: ["retail", "portal", "franchise"] });
-      toast("Your sales are reported", "success");
+      toast(t("Your sales are reported"), "success");
       navigate("/");
     } catch (err) {
       toast(errorMessage(err), "error");
@@ -127,8 +127,8 @@ export function FranchiseReport() {
   };
   return (
     <form className="card card-pad stack np-page" onSubmit={(e) => void submit(e)}>
-      <h1 className="page-title">Report your sales</h1>
-      <Field label="Agreement">
+      <h1 className="page-title">{t("Report your sales")}</h1>
+      <Field label={t("Agreement")}>
         <select className="input" value={chosen} onChange={(e) => setAgreement(e.target.value)}>
           {open.map((a) => (
             <option key={a.id} value={a.id}>
@@ -137,20 +137,20 @@ export function FranchiseReport() {
           ))}
         </select>
       </Field>
-      <Field label="From">
+      <Field label={t("From")}>
         <input className="input" type="date" value={from} required onChange={(e) => setFrom(e.target.value)} />
       </Field>
-      <Field label="To">
+      <Field label={t("To")}>
         <input className="input" type="date" value={to} required onChange={(e) => setTo(e.target.value)} />
       </Field>
-      <Field label="Gross sales">
+      <Field label={t("Gross sales")}>
         <input className="input" inputMode="decimal" value={sales} required onChange={(e) => setSales(e.target.value)} />
       </Field>
       <div className="row">
         <Button type="submit" variant="primary" loading={busy} disabled={!chosen || !from || !to || !sales.trim()}>
-          Report
+          {t("Report")}
         </Button>
-        <Link to="/">Back</Link>
+        <Link to="/">{t("Back")}</Link>
       </div>
     </form>
   );
