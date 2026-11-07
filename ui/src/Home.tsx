@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
-import { api, docPath } from "@ferrum/client";
+import { api, docPath, t as tr } from "@ferrum/client";
 import { ErrorState, PageLoading, useShellTitle } from "@ferrum/kit";
 
 export interface Row {
@@ -65,17 +65,17 @@ export function Home() {
   return (
     <div className="np-page">
       <header className="row" style={{ justifyContent: "space-between" }}>
-        <h2>The stores</h2>
-        <Link to="/r/retail_stock_by_store">Stock by store</Link>
+        <h2>{tr("The stores")}</h2>
+        <Link to="/r/retail_stock_by_store">{tr("Stock by store")}</Link>
       </header>
       <div className="np-columns">
-        <List title="To get ready" list={q.data.ordered} entity="CollectOrder" label={num} />
-        <List title="Ready to hand over" list={q.data.ready} entity="CollectOrder" label={num} />
-        <List title="To ship from a store" list={q.data.toShip} entity="StoreShipment" label={num} />
-        <List title="Returns to take back" list={q.data.toTakeBack} entity="StoreReturn" label={num} />
-        <List title="Asked of another store" list={q.data.asked} entity="StoreTransfer" label={num} />
-        <List title="On the way" list={q.data.onTheWay} entity="StoreTransfer" label={num} />
-        <List title="Royalties to invoice" list={q.data.reports} entity="RoyaltyReport" label={(r) => `${num(r)} · ${String(r.total ?? "")}`} />
+        <List title={tr("To get ready")} list={q.data.ordered} entity="CollectOrder" label={num} />
+        <List title={tr("Ready to hand over")} list={q.data.ready} entity="CollectOrder" label={num} />
+        <List title={tr("To ship from a store")} list={q.data.toShip} entity="StoreShipment" label={num} />
+        <List title={tr("Returns to take back")} list={q.data.toTakeBack} entity="StoreReturn" label={num} />
+        <List title={tr("Asked of another store")} list={q.data.asked} entity="StoreTransfer" label={num} />
+        <List title={tr("On the way")} list={q.data.onTheWay} entity="StoreTransfer" label={num} />
+        <List title={tr("Royalties to invoice")} list={q.data.reports} entity="RoyaltyReport" label={(r) => `${num(r)} · ${String(r.total ?? "")}`} />
       </div>
     </div>
   );
