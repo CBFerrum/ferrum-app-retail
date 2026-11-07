@@ -1,6 +1,6 @@
 id: retail
 name: Retail
-version: 0.3.8
+version: 0.3.9
 publisher: cbferrum
 summary: "Click and collect, ship from store, returns to any store, stock by store, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
 description: README.md
@@ -36,3 +36,16 @@ contributes:
   # The workspace's portal: a franchisee's agreements, their sales reported and the fees on them.
   shell.portal:
     - {id: franchise, title: Your franchise, description: "Report your sales, and see the fees invoiced on them"}
+  # What the assistant should know in Retail's pages, and what it suggests asking there.
+  shell.assistant:
+    - id: retail
+      title: "Retail"
+      instructions: >-
+        A CollectOrder (Ordered, Ready, Collected, Cancelled) is click and collect at a store, and a StoreShipment
+        ships an order from one. Stock moves between stores by StoreTransfer: Requested, Sent, Part Received,
+        Received, Closed Short, Rejected or Cancelled. A StoreReturn takes goods back at any store. Franchisees report
+        their sales (RoyaltyReport) and are invoiced their royalties through ERP.
+      suggestions:
+        - "Which collect orders are ready but not collected?"
+        - "Which transfers are still on their way?"
+        - "Which franchisees have not reported this month?"
