@@ -1,6 +1,6 @@
 id: retail
 name: Retail
-version: 0.3.7
+version: 0.3.8
 publisher: cbferrum
 summary: "Click and collect, ship from store, returns to any store, stock by store, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
 description: README.md
