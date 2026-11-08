@@ -2,6 +2,8 @@
   "Agreement": "समझौता",
   "Agreement {value}": "समझौता {value}",
   "Asked of another store": "दूसरे स्टोर से माँगा गया",
+  "Go to the stores": "स्टोरों पर जाएँ",
+  "Go to your franchise": "अपनी फ़्रैंचाइज़ी पर जाएँ",
   "Gross sales": "सकल बिक्री",
   "No franchise here yet": "अभी यहाँ कोई फ़्रैंचाइज़ नहीं",
   "Nothing reported yet.": "अभी कुछ रिपोर्ट नहीं हुआ।",
@@ -20,9 +22,8 @@
   "Your agreements, the sales you reported, and the fees on them.": "आपके समझौते, आपकी रिपोर्ट की गई बिक्री, और उन पर शुल्क।",
   "Your franchise": "आपकी फ़्रैंचाइज़",
   "Your sales are reported": "आपकी बिक्री रिपोर्ट हो गई",
-  "{number} · {period_from} to {period_to} · sales": "{number} · {period_from} से {period_to} · बिक्री",
+  "{number} · {period_from} to {period_to} · sales {p1} · fees {p2}": "{number} · {period_from} से {period_to} · बिक्री {p1} · शुल्क {p2}",
   "{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing": "{starts_on} से {ends_on} · रॉयल्टी {royalty_percent}% · मार्केटिंग",
-  "· fees": "· शुल्क",
   "· not issued yet": "· अभी जारी नहीं",
   "· {starts_on} to {ends_on}": "· {starts_on} से {ends_on}"
 }

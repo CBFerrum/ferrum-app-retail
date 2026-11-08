@@ -22,7 +22,7 @@ function RouteError() {
   return <ErrorState error={useRouteError()} onRetry={() => window.location.reload()} />;
 }
 
-function NotFound({ back = "Go to the stores" }: { back?: string }) {
+function NotFound({ back = t("Go to the stores") }: { back?: string }) {
   return (
     <EmptyState title={t("Page not found")}>
       <Link to="/">{isolate(back)}</Link>
@@ -54,7 +54,7 @@ const portalRoutes = [
     children: [
       { index: true, lazy: () => import("./Portal").then((m) => ({ Component: m.FranchiseHome })) },
       { path: "new", lazy: () => import("./Portal").then((m) => ({ Component: m.FranchiseReport })) },
-      { path: "*", element: <NotFound back="Go to your franchise" /> },
+      { path: "*", get element() { return <NotFound back={t("Go to your franchise")} />; } },
     ],
   },
 ];

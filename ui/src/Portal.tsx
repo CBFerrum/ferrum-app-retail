@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, errorMessage, formatValue, todayIso, t, isolate } from "@ferrum/client";
-import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle } from "@ferrum/kit";
+import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle, placed } from "@ferrum/kit";
 
 const BASE = "/api/app/retail/portal";
 
@@ -83,8 +83,7 @@ export function FranchiseHome() {
               <ul className="stack">
                 {a.reports.map((r) => (
                   <li key={r.id}>
-                    {t("{number} · {period_from} to {period_to} · sales", { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "" })} {isolate(money(r.gross_sales))} {t("· fees")}{isolate(" ")}
-                    {r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : money(r.total)} <Badge tone={statusTone(r.status)}>{isolate(r.status ?? "")}</Badge>
+                    {placed(t("{number} · {period_from} to {period_to} · sales {p1} · fees {p2}"), { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "", p1: isolate(money(r.gross_sales)), p2: r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : money(r.total) })} <Badge tone={statusTone(r.status)}>{isolate(r.status ?? "")}</Badge>
                     {r.status === "Invoiced" && !r.issued && <span className="muted"> {t("· not issued yet")}</span>}
                   </li>
                 ))}
