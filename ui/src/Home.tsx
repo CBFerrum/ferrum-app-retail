@@ -85,7 +85,7 @@ export function Home() {
       </HomeSection>
       <HomeSection title={tr("Franchisees")}>
         <QueueGrid>
-          <Work title={tr("Royalties to invoice")} list={q.data.reports} entity="RoyaltyReport" label={num} tone={q.data.reports.length ? "attention" : undefined} trailing={(r) => <span className="text-sm font-medium tabular-nums">{isolate(String(r.total ?? ""))}</span>} />
+          <Work title={tr("Royalties to invoice")} list={q.data.reports} entity="RoyaltyReport" label={num} tone={q.data.reports.length ? "attention" : undefined} trailing={(r) => <span className="num">{isolate(String(r.total ?? ""))}</span>} />
         </QueueGrid>
       </HomeSection>
     </PageStack>
