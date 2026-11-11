@@ -4,7 +4,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api, docPath, t as tr, isolate } from "@ferrum/client";
-import { ButtonLink, HomeSkeleton, LoadFailed, PageHead, Queue, QueueGrid, QueueItem } from "@ferrum/kit";
+import { ButtonLink, HomeSkeleton, LoadFailed, HomeSection, PageHead, PageStack, Queue, QueueGrid, QueueItem } from "@ferrum/kit";
 
 export interface Row {
   id: string;
@@ -60,26 +60,34 @@ export function Home() {
     refetchInterval: 30_000,
   });
   const head = <PageHead title={tr("The stores")} actions={<ButtonLink to="/r/retail_stock_by_store">{tr("Stock by store")}</ButtonLink>} />;
-  if (q.isPending) return <>{head}<HomeSkeleton queues={6} /></>;
-  if (q.isError) return <>{head}<LoadFailed error={q.error} onRetry={() => void q.refetch()} /></>;
+  if (q.isPending) return <PageStack>{head}<HomeSkeleton queues={4} /></PageStack>;
+  if (q.isError) return <PageStack>{head}<LoadFailed error={q.error} onRetry={() => void q.refetch()} /></PageStack>;
   const num = (r: Row) => String(r.number ?? "");
   const store = (r: Row) => names(r, "store");
   const route = (r: Row) => names(r, "from_store", "to_store");
   return (
-    <>
+    <PageStack gap="lg">
       {head}
-      <QueueGrid>
-        {/* Royalties are for managers (a store associate sees none, so an empty queue would only mislead): shown, first, only when there are reports to invoice. */}
-        {q.data.reports.length > 0 && (
-          <Work title={tr("Royalties to invoice")} list={q.data.reports} entity="RoyaltyReport" label={num} tone="attention" trailing={(r) => <span className="text-sm font-medium tabular-nums">{isolate(String(r.total ?? ""))}</span>} />
-        )}
-        <Work title={tr("To get ready")} list={q.data.ordered} entity="CollectOrder" label={num} meta={store} />
-        <Work title={tr("Ready to hand over")} list={q.data.ready} entity="CollectOrder" label={num} meta={store} />
-        <Work title={tr("To ship from a store")} list={q.data.toShip} entity="StoreShipment" label={num} meta={store} />
-        <Work title={tr("Returns to take back")} list={q.data.toTakeBack} entity="StoreReturn" label={num} meta={store} />
-        <Work title={tr("Asked of another store")} list={q.data.asked} entity="StoreTransfer" label={num} meta={route} />
-        <Work title={tr("On the way")} list={q.data.onTheWay} entity="StoreTransfer" label={num} meta={route} />
-      </QueueGrid>
-    </>
+      {/* Grouped by who the work is for: a customer's order or return, another store's stock, a franchisee's report. */}
+      <HomeSection title={tr("Customers")}>
+        <QueueGrid>
+          <Work title={tr("To get ready")} list={q.data.ordered} entity="CollectOrder" label={num} meta={store} />
+          <Work title={tr("Ready to hand over")} list={q.data.ready} entity="CollectOrder" label={num} meta={store} />
+          <Work title={tr("To ship from a store")} list={q.data.toShip} entity="StoreShipment" label={num} meta={store} />
+          <Work title={tr("Returns to take back")} list={q.data.toTakeBack} entity="StoreReturn" label={num} meta={store} />
+        </QueueGrid>
+      </HomeSection>
+      <HomeSection title={tr("Between stores")}>
+        <QueueGrid>
+          <Work title={tr("Asked of another store")} list={q.data.asked} entity="StoreTransfer" label={num} meta={route} />
+          <Work title={tr("On the way")} list={q.data.onTheWay} entity="StoreTransfer" label={num} meta={route} />
+        </QueueGrid>
+      </HomeSection>
+      <HomeSection title={tr("Franchisees")}>
+        <QueueGrid>
+          <Work title={tr("Royalties to invoice")} list={q.data.reports} entity="RoyaltyReport" label={num} tone={q.data.reports.length ? "attention" : undefined} trailing={(r) => <span className="text-sm font-medium tabular-nums">{isolate(String(r.total ?? ""))}</span>} />
+        </QueueGrid>
+      </HomeSection>
+    </PageStack>
   );
 }

@@ -7,7 +7,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router";
 import { api, errorMessage, formatValue, todayIso, t, isolate } from "@ferrum/client";
-import { Button, ButtonLink, Field, HomeSkeleton, LoadFailed, PageHead, StatePanel, StatusBadge, toast } from "@ferrum/kit";
+import { Button, ButtonLink, Field, HomeSection, HomeSkeleton, LoadFailed, PageHead, PageStack, StatePanel, StatusBadge, toast } from "@ferrum/kit";
 
 // RoyaltyReport.status as stored (packages/retail/entities/retail.yaml).
 const REPORT_TONES = { Draft: "neutral", Invoiced: "green" } as const;
@@ -51,12 +51,12 @@ export function FranchiseHome() {
   const q = useFranchise();
   const title = t("Your franchise");
   const sub = t("Your agreements, the sales you reported, and the fees on them.");
-  if (q.error) return <><PageHead title={title} description={sub} /><LoadFailed error={q.error} onRetry={() => void q.refetch()} /></>;
-  if (!q.data) return <><PageHead title={title} description={sub} /><HomeSkeleton queues={2} /></>;
+  if (q.error) return <PageStack><PageHead title={title} description={sub} /><LoadFailed error={q.error} onRetry={() => void q.refetch()} /></PageStack>;
+  if (!q.data) return <PageStack><PageHead title={title} description={sub} /><HomeSkeleton queues={2} /></PageStack>;
   const { agreements } = q.data;
   const today = todayIso();
   return (
-    <>
+    <PageStack>
       <PageHead
         title={title}
         description={sub}
@@ -67,19 +67,16 @@ export function FranchiseHome() {
           {t("When an agreement is made out to you, it is here with what you report under it.")}
         </StatePanel>
       ) : (
-        <div className="grid gap-4">
-          {agreements.map((a) => (
-            <section key={a.id} className="card card-pad stack min-w-0" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
-              <header className="grid gap-1">
-                <h2 className="text-base font-semibold">{a.territory || t("Your agreement")}</h2>
-                <p className="text-xs text-muted-foreground">
-                  {t("{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "", royalty_percent: a.royalty_percent ?? "" })} {a.marketing_percent ?? 0}%
-                </p>
-              </header>
-              {a.reports.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("Nothing reported yet.")}</p>
-              ) : (
-                <div className="table-wrap" tabIndex={0} role="region" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
+        agreements.map((a) => (
+          <HomeSection key={a.id} title={a.territory || t("Your agreement")}>
+          <div className="grid gap-2">
+            <p className="text-xs text-muted-foreground">
+              {isolate(t("{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "", royalty_percent: a.royalty_percent ?? "" }))} {isolate(`${a.marketing_percent ?? 0}%`)}
+            </p>
+            {a.reports.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("Nothing reported yet.")}</p>
+            ) : (
+              <div className="table-wrap" tabIndex={0} role="region" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
                   <table className="table">
                     <thead>
                       <tr>
@@ -93,7 +90,7 @@ export function FranchiseHome() {
                     <tbody>
                       {a.reports.map((r) => (
                         <tr key={r.id}>
-                          <td>{isolate(r.number ?? "")}</td>
+                          <td className="nowrap">{isolate(r.number ?? "")}</td>
                           <td className="nowrap">{t("{period_from} to {period_to}", { period_from: r.period_from ?? "", period_to: r.period_to ?? "" })}</td>
                           <td className="num">{isolate(money(r.gross_sales))}</td>
                           <td className="num">{r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : isolate(money(r.total))}</td>
@@ -105,13 +102,13 @@ export function FranchiseHome() {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              )}
-            </section>
-          ))}
-        </div>
+              </div>
+            )}
+          </div>
+          </HomeSection>
+        ))
       )}
-    </>
+    </PageStack>
   );
 }
 
@@ -125,8 +122,8 @@ export function FranchiseReport() {
   const [sales, setSales] = useState("");
   const [busy, setBusy] = useState(false);
   const head = <PageHead title={t("Report your sales")} back={{ to: "/", label: t("Your franchise") }} />;
-  if (q.error) return <>{head}<LoadFailed error={q.error} onRetry={() => void q.refetch()} /></>;
-  if (!q.data) return <>{head}<HomeSkeleton queues={1} /></>;
+  if (q.error) return <PageStack>{head}<LoadFailed error={q.error} onRetry={() => void q.refetch()} /></PageStack>;
+  if (!q.data) return <PageStack>{head}<HomeSkeleton queues={1} /></PageStack>;
   const open = reportable(q.data.agreements, todayIso());
   const chosen = agreement || open[0]?.id || "";
   const submit = async (e: FormEvent) => {
@@ -144,7 +141,7 @@ export function FranchiseReport() {
     }
   };
   return (
-    <>
+    <PageStack>
     {head}
     <form className="card card-pad stack retail-form" onSubmit={(e) => void submit(e)}>
       <Field label={t("Agreement")}>
@@ -172,6 +169,6 @@ export function FranchiseReport() {
         <ButtonLink to="/" variant="ghost">{t("Back")}</ButtonLink>
       </div>
     </form>
-    </>
+    </PageStack>
   );
 }
