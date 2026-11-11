@@ -7,7 +7,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { api, errorMessage, formatValue, todayIso, t, isolate } from "@ferrum/client";
-import { Badge, Button, EmptyState, ErrorState, Field, PageLoading, statusTone, toast, useShellTitle, placed } from "@ferrum/kit";
+import { Badge, Button, ErrorState, Field, ListSkeleton, StatePanel, statusTone, toast, useShellTitle, placed } from "@ferrum/kit";
+
+// RoyaltyReport.status as stored (packages/retail/entities/retail.yaml).
+const REPORT_TONES = { Draft: "neutral", Invoiced: "green" } as const;
 
 const BASE = "/api/app/retail/portal";
 
@@ -48,7 +51,7 @@ export function FranchiseHome() {
   useShellTitle(t("Your franchise"));
   const q = useFranchise();
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
-  if (!q.data) return <PageLoading />;
+  if (!q.data) return <ListSkeleton className="np-page" />;
   const { agreements } = q.data;
   const today = todayIso();
   return (
@@ -65,9 +68,9 @@ export function FranchiseHome() {
         )}
       </div>
       {!agreements.length ? (
-        <EmptyState title={t("No franchise here yet")} icon="store">
-          <p className="muted">{t("When an agreement is made out to you, it is here with what you report under it.")}</p>
-        </EmptyState>
+        <StatePanel kind="empty" title={t("No franchise here yet")}>
+          {t("When an agreement is made out to you, it is here with what you report under it.")}
+        </StatePanel>
       ) : (
         agreements.map((a) => (
           <section key={a.id} className="card card-pad stack" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
@@ -83,7 +86,7 @@ export function FranchiseHome() {
               <ul className="stack">
                 {a.reports.map((r) => (
                   <li key={r.id}>
-                    {placed(t("{number} · {period_from} to {period_to} · sales {p1} · fees {p2}"), { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "", p1: isolate(money(r.gross_sales)), p2: r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : money(r.total) })} <Badge tone={statusTone(r.status)}>{isolate(r.status ?? "")}</Badge>
+                    {placed(t("{number} · {period_from} to {period_to} · sales {p1} · fees {p2}"), { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "", p1: isolate(money(r.gross_sales)), p2: r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : money(r.total) })} <Badge tone={statusTone(r.status, REPORT_TONES)}>{isolate(r.status ?? "")}</Badge>
                     {r.status === "Invoiced" && !r.issued && <span className="muted"> {t("· not issued yet")}</span>}
                   </li>
                 ))}
@@ -107,7 +110,7 @@ export function FranchiseReport() {
   const [sales, setSales] = useState("");
   const [busy, setBusy] = useState(false);
   if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
-  if (!q.data) return <PageLoading />;
+  if (!q.data) return <ListSkeleton className="np-page" />;
   const open = reportable(q.data.agreements, todayIso());
   const chosen = agreement || open[0]?.id || "";
   const submit = async (e: FormEvent) => {
