@@ -5,9 +5,9 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { type FormEvent, useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { api, errorMessage, formatValue, todayIso, t, isolate } from "@ferrum/client";
-import { Badge, Button, ErrorState, Field, ListSkeleton, StatePanel, statusTone, toast, useShellTitle, placed } from "@ferrum/kit";
+import { Button, ButtonLink, Field, HomeSkeleton, LoadFailed, PageHead, StatePanel, StatusBadge, toast } from "@ferrum/kit";
 
 // RoyaltyReport.status as stored (packages/retail/entities/retail.yaml).
 const REPORT_TONES = { Draft: "neutral", Invoiced: "green" } as const;
@@ -48,59 +48,74 @@ const useFranchise = () =>
   useQuery({ queryKey: ["retail", "portal", "franchise"], queryFn: ({ signal }) => api.get<{ agreements: Agreement[] }>(`${BASE}/franchise`, {}, signal) });
 
 export function FranchiseHome() {
-  useShellTitle(t("Your franchise"));
   const q = useFranchise();
-  if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
-  if (!q.data) return <ListSkeleton className="np-page" />;
+  const title = t("Your franchise");
+  const sub = t("Your agreements, the sales you reported, and the fees on them.");
+  if (q.error) return <><PageHead title={title} description={sub} /><LoadFailed error={q.error} onRetry={() => void q.refetch()} /></>;
+  if (!q.data) return <><PageHead title={title} description={sub} /><HomeSkeleton queues={2} /></>;
   const { agreements } = q.data;
   const today = todayIso();
   return (
-    <div className="stack np-page">
-      <div className="page-head">
-        <div>
-          <h1 className="page-title">{t("Your franchise")}</h1>
-          <p className="page-sub">{t("Your agreements, the sales you reported, and the fees on them.")}</p>
-        </div>
-        {reportable(agreements, today).length > 0 && (
-          <Link className="btn btn-primary btn-md" to="/new">
-            {t("Report your sales")}
-          </Link>
-        )}
-      </div>
+    <>
+      <PageHead
+        title={title}
+        description={sub}
+        actions={reportable(agreements, today).length > 0 ? <ButtonLink to="/new" variant="primary" icon="plus">{t("Report your sales")}</ButtonLink> : undefined}
+      />
       {!agreements.length ? (
         <StatePanel kind="empty" title={t("No franchise here yet")}>
           {t("When an agreement is made out to you, it is here with what you report under it.")}
         </StatePanel>
       ) : (
-        agreements.map((a) => (
-          <section key={a.id} className="card card-pad stack" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
-            <header className="row" style={{ justifyContent: "space-between" }}>
-              <h3>{a.territory || t("Your agreement")}</h3>
-              <span className="faint">
-                {t("{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "", royalty_percent: a.royalty_percent ?? "" })} {a.marketing_percent ?? 0}%
-              </span>
-            </header>
-            {a.reports.length === 0 ? (
-              <p className="muted">{t("Nothing reported yet.")}</p>
-            ) : (
-              <ul className="stack">
-                {a.reports.map((r) => (
-                  <li key={r.id}>
-                    {placed(t("{number} · {period_from} to {period_to} · sales {p1} · fees {p2}"), { number: r.number ?? "", period_from: r.period_from ?? "", period_to: r.period_to ?? "", p1: isolate(money(r.gross_sales)), p2: r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : money(r.total) })} <Badge tone={statusTone(r.status, REPORT_TONES)}>{isolate(r.status ?? "")}</Badge>
-                    {r.status === "Invoiced" && !r.issued && <span className="muted"> {t("· not issued yet")}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        ))
+        <div className="grid gap-4">
+          {agreements.map((a) => (
+            <section key={a.id} className="card card-pad stack min-w-0" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
+              <header className="grid gap-1">
+                <h2 className="text-base font-semibold">{a.territory || t("Your agreement")}</h2>
+                <p className="text-xs text-muted-foreground">
+                  {t("{starts_on} to {ends_on} · royalty {royalty_percent}% · marketing", { starts_on: a.starts_on ?? "", ends_on: a.ends_on ?? "", royalty_percent: a.royalty_percent ?? "" })} {a.marketing_percent ?? 0}%
+                </p>
+              </header>
+              {a.reports.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("Nothing reported yet.")}</p>
+              ) : (
+                <div className="table-wrap" tabIndex={0} role="region" aria-label={t("Agreement {value}", { value: a.territory ?? "" })}>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th scope="col">{t("Report")}</th>
+                        <th scope="col">{t("Period")}</th>
+                        <th scope="col" className="num">{t("Sales")}</th>
+                        <th scope="col" className="num">{t("Fees")}</th>
+                        <th scope="col">{t("Status")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {a.reports.map((r) => (
+                        <tr key={r.id}>
+                          <td>{isolate(r.number ?? "")}</td>
+                          <td className="nowrap">{t("{period_from} to {period_to}", { period_from: r.period_from ?? "", period_to: r.period_to ?? "" })}</td>
+                          <td className="num">{isolate(money(r.gross_sales))}</td>
+                          <td className="num">{r.invoice ? <a href={`/portal/invoices/${r.invoice}`}>{isolate(money(r.total))}</a> : isolate(money(r.total))}</td>
+                          <td>
+                            <StatusBadge value={r.status} tones={REPORT_TONES} label={isolate(r.status ?? "")} />
+                            {r.status === "Invoiced" && !r.issued && <span className="text-xs text-muted-foreground"> {t("· not issued yet")}</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          ))}
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
 export function FranchiseReport() {
-  useShellTitle(t("Report your sales"));
   const navigate = useNavigate();
   const qc = useQueryClient();
   const q = useFranchise();
@@ -109,8 +124,9 @@ export function FranchiseReport() {
   const [to, setTo] = useState("");
   const [sales, setSales] = useState("");
   const [busy, setBusy] = useState(false);
-  if (q.error) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
-  if (!q.data) return <ListSkeleton className="np-page" />;
+  const head = <PageHead title={t("Report your sales")} back={{ to: "/", label: t("Your franchise") }} />;
+  if (q.error) return <>{head}<LoadFailed error={q.error} onRetry={() => void q.refetch()} /></>;
+  if (!q.data) return <>{head}<HomeSkeleton queues={1} /></>;
   const open = reportable(q.data.agreements, todayIso());
   const chosen = agreement || open[0]?.id || "";
   const submit = async (e: FormEvent) => {
@@ -128,8 +144,9 @@ export function FranchiseReport() {
     }
   };
   return (
-    <form className="card card-pad stack np-page" onSubmit={(e) => void submit(e)}>
-      <h1 className="page-title">{t("Report your sales")}</h1>
+    <>
+    {head}
+    <form className="card card-pad stack retail-form" onSubmit={(e) => void submit(e)}>
       <Field label={t("Agreement")}>
         <select className="input" value={chosen} onChange={(e) => setAgreement(e.target.value)}>
           {open.map((a) => (
@@ -152,8 +169,9 @@ export function FranchiseReport() {
         <Button type="submit" variant="primary" loading={busy} disabled={!chosen || !from || !to || !sales.trim()}>
           {t("Report")}
         </Button>
-        <Link to="/">{t("Back")}</Link>
+        <ButtonLink to="/" variant="ghost">{t("Back")}</ButtonLink>
       </div>
     </form>
+    </>
   );
 }
