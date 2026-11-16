@@ -7,7 +7,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-0.3.13-be185d?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.14-be185d?style=flat-square)](CHANGELOG.md)
 [![Licence: AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-blue?style=flat-square)](LICENSE)
 [![Ferrum platform](https://img.shields.io/badge/runs%20on-Ferrum-2f5bea?style=flat-square)](https://github.com/CBFerrum/Ferrum)
 ![Rust](https://img.shields.io/badge/Rust-server-b7410e?style=flat-square&logo=rust)
@@ -37,7 +37,7 @@ Ferrum Retail is for chains of shops and the franchisors behind them. It adds cl
 
 | | |
 |---|---|
-| **Version** | 0.3.13 |
+| **Version** | 0.3.14 |
 | **Kind** | Its own interface at `/retail/` (what waits on the stores), the franchisee's page of the portal at `/portal/franchise/`, and the platform's records screens for the rest |
 | **What it adds** | 9 entities (7 you work with, 2 that sit inside them), 2 roles, 1 report (Stock by Store), 1 menu module, 1 field on ERP's warehouse (Is A Store), 1 package. It has no print formats of its own |
 | **Depends on** | Ferrum platform `>=0.3.2, <0.4` and [ERP](https://github.com/CBFerrum/ferrum-app-erp) `>=0.1` (selling, inventory and accounting) |
@@ -161,6 +161,7 @@ Ferrum Retail is for chains of shops and the franchisors behind them. It adds cl
 - **Numbering.** `ROY-{year}-{5 digits}`.
 - **Your franchise, on the portal.** A franchisee signs in to the workspace's portal and sees their agreements, the sales they reported and the fees on them, as money. Each invoice opens on ERP's Your invoices once issued.
 - **They report under their own agreements only,** by the same rules as a report made in the office, and the report keeps who made it.
+- **Theirs is found as ERP's portal finds it:** the agreements of the customers their address belongs to, never a disabled customer nor one a web shop made at a guest checkout.
 
 ### 🔐 Roles, privacy and APIs
 
@@ -291,6 +292,7 @@ Leaders: Lightspeed Retail, Shopify POS, Oracle Retail (Xstore), Microsoft Dynam
 
 ### ✅ Recently shipped
 
+- [x] **0.3.14:** the franchise portal finds a franchisee's customers as ERP's portal does, never a web shop's guest or a disabled customer.
 - [x] **0.3.13:** the interface on the tuned design system, with better menu icons and cleaner print.
 - [x] **0.3.12:** the redesigned interface, with the stores' home on the work-home pattern.
 - [x] **0.3.11:** reports named in Arabic and Hindi.
@@ -366,7 +368,7 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 ```
 
-Its tests also build on [ferrum-app-erp](https://github.com/CBFerrum/ferrum-app-erp), which Cargo takes from GitHub. The interface (`ui/`) is built with the platform's packages from the sibling `ferrum/web` checkout, and its built files (`ui/dist`) are committed and embedded in the crate:
+It also builds on [ferrum-app-erp](https://github.com/CBFerrum/ferrum-app-erp), which Cargo takes from GitHub. The interface (`ui/`) is built with the platform's packages from the sibling `ferrum/web` checkout, and its built files (`ui/dist`) are committed and embedded in the crate:
 
 ```bash
 cd ui

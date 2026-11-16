@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.14
+
+Your franchise finds a portal person's customers as ERP's portal does (`ferrum_app_erp::portal::customers_of`), in place of a copy of its own that had missed two of ERP's rules. A customer a web shop made at a guest checkout under the person's address counted as theirs, though anyone may type anyone's address there; so did a disabled customer one of their contacts names. Either one's agreements, sales and fees showed on the person's page, and they could report sales under its agreements. ERP is now a dependency of the app, not of its tests only.
+
 ## 0.3.13
 
 Rebuilt with Ferrum-Frontend 9e7190c, the design system as tuned after the landed build was reviewed. The left menu's icons are chosen so that none repeats on more than three rows and each fits its row; their drawings load beside the first page instead of inside it, so the page starts lighter; a row that scrolls sideways fades at the edge where there is more, in every browser and with reduced motion; a printed record leaves out empty fields and keeps its totals with the table; menus and popovers sit inside the page's landmarks for assistive technology; a selection bar folds what does not fit into More on a narrow screen. Nothing else changes.
