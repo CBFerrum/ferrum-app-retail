@@ -16,6 +16,11 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use uuid::Uuid;
 
+/// Commerce's mark on the customers its guest checkouts make, as its package adds it; installed
+/// late, so that the rest runs as a workspace without Commerce does.
+const COMMERCE: &str = "{package: commerce, version: '1', depends: [parties], field_prefix: commerce_, overlays: [{entity: Customer, ops: \
+     [{op: add_field, field: {name: commerce_guest, type: check, read_only: true, in_filter: true}}]}]}";
+
 fn obj(v: Value) -> Doc {
     v.as_object().cloned().unwrap()
 }
@@ -111,6 +116,7 @@ async fn scenario() {
     let mut packages = ferrum_domain::packages().expect("platform packages");
     packages.extend(ferrum_app_erp::packages().expect("ERP's packages"));
     packages.extend(ferrum_app_retail::packages().expect("app packages"));
+    packages.push(ferrum_meta::catalog::load_package_files(&[("package.yaml".to_string(), COMMERCE.to_string())].into()).expect("Commerce's mark"));
     let catalog = Catalog::from_packages(packages).expect("catalog");
     let mut hooks = HookRegistry::default();
     ferrum_domain::register(&mut hooks);
@@ -344,4 +350,29 @@ async fn scenario() {
     let mine = call(&k, Some(&owner), "GET", "portal/franchise", Value::Null).await.unwrap();
     let october = mine["agreements"][0]["reports"].as_array().unwrap().iter().find(|r| r["period_from"] == "2026-10-01").unwrap().clone();
     assert_eq!((october["invoice"].as_str(), october["issued"].as_bool()), (Some(oct_invoice.to_string().as_str()), Some(true)));
+
+    // ───────────── a web shop's guest under their address, a customer put aside ─────────────
+    // Anyone may type anyone's address at a guest checkout: the customer it makes is not theirs, nor
+    // is a disabled one their contact names, nor are their agreements.
+    t.k.install_packages(tenant, &["commerce".into()]).await.expect("Commerce's mark");
+    let sys = ferrum_domain::util::sys(&k.load_ctx(tenant, a.user, None, "it".into()).await.unwrap());
+    let guest = json!({"customer_name": "Franco at the shop", "customer_type": "Individual", "email": "owner@franco.test", "commerce_guest": true});
+    let guest = uid(&t.insert(&sys, "Customer", guest).await["id"]);
+    let old = uid(&t.insert(&a, "Customer", json!({"customer_name": "Franco Old Stores", "customer_type": "Company"})).await["id"]);
+    t.insert(&a, "Contact", json!({"first_name": "Franco", "emails": [{"email": "owner@franco.test"}], "customer": old.to_string()})).await;
+    let mut theirs = vec![];
+    for who in [guest, old] {
+        let mut terms = franchise("5", "1", "2026-01-01", "2030-12-31");
+        terms["customer"] = json!(who.to_string());
+        theirs.push(uid(&t.insert(&manager, "Franchisee", terms).await["id"]));
+    }
+    t.k.update(&a, "Customer", old, obj(json!({"disabled": true})), None).await.expect("put aside");
+    let owner = k.load_ctx(tenant, owner.user, None, "it".into()).await.unwrap();
+    let mine = call(&k, Some(&owner), "GET", "portal/franchise", Value::Null).await.unwrap();
+    let agreements: Vec<&str> = mine["agreements"].as_array().unwrap().iter().filter_map(|g| g["id"].as_str()).collect();
+    assert_eq!(agreements, [fr.to_string()], "neither the guest's agreement nor the disabled customer's");
+    for f in theirs {
+        let sales = json!({"franchisee": f.to_string(), "period_from": "2027-01-01", "period_to": "2027-01-31", "gross_sales": "1"});
+        refused(call(&k, Some(&owner), "POST", "portal/reports", sales).await, "invalid", "not an agreement of yours");
+    }
 }
