@@ -37,7 +37,7 @@ Ferrum Retail is for chains of shops and the franchisors behind them. It adds cl
 
 | | |
 |---|---|
-| **Version** | 0.3.14 |
+| **Version** | 0.3.15 |
 | **Kind** | Its own interface at `/retail/` (what waits on the stores), the franchisee's page of the portal at `/portal/franchise/`, and the platform's records screens for the rest |
 | **What it adds** | 9 entities (7 you work with, 2 that sit inside them), 2 roles, 1 report (Stock by Store), 1 menu module, 1 field on ERP's warehouse (Is A Store), 1 package. It has no print formats of its own |
 | **Depends on** | Ferrum platform `>=0.3.2, <0.4` and [ERP](https://github.com/CBFerrum/ferrum-app-erp) `>=0.1` (selling, inventory and accounting) |
@@ -106,7 +106,7 @@ Ferrum Retail is for chains of shops and the franchisors behind them. It adds cl
 | **Collected** | Handed over against the code |
 | **Cancelled** | The order is free for another collection |
 
-- **One collection to an order.** An order is collected in one store once, and an order shipped from a store is never also collected.
+- **One collection to an order.** Saving a collection for an order that is already collected, or shipped from a store, is refused.
 - **It Is Ready** only when the store holds every line. Otherwise it says what is short, and how many the store has.
 - **Bring It From Another Store** asks for what the collecting store lacks, as a transfer, and links it to the collection.
 - **Hand It Over** asks for the pickup code. It makes and submits the order's delivery note, so the goods leave the store's stock.
@@ -116,7 +116,7 @@ Ferrum Retail is for chains of shops and the franchisors behind them. It adds cl
 
 - **Choose the store, or let the app choose.** From a store named, or else from the store holding the most of it among the stores holding all of it.
 - **Ship It** makes the order's delivery note from that store, for every line, whatever warehouse the order named (a web order names none), and submits it. The carrier and tracking number are kept as given.
-- **Once only.** An order is shipped from a store once, and never also collected in one. A warehouse that is not a store is refused.
+- **Once only.** Shipping an order that is already shipped from a store, or collected in one, is refused. A warehouse that is not a store is refused.
 - **States.** To Ship, Shipped, Cancelled.
 
 ### ↩️ Returns to any store
@@ -187,7 +187,7 @@ flowchart LR
     T --> C
 ```
 
-One order has one fulfilment: collected in a store, or shipped from one. Both end in an ERP delivery note from the store's stock.
+An order is refused a second fulfilment: it is collected in a store, or shipped from one. Both end in an ERP delivery note from the store's stock.
 
 ```mermaid
 flowchart LR
@@ -254,8 +254,8 @@ Leaders: Lightspeed Retail, Shopify POS, Oracle Retail (Xstore), Microsoft Dynam
 | Transfers between stores, partial receipt, write-off | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Franchise royalties reported on a portal and invoiced | ✅ | ❌ | ❌ | 🟡⁶ | 🟡⁶ | ❌ |
 | A till with offline selling | 🟡⁷ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Gift cards and store credit | ✅⁷ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Loyalty points and tiers | ✅⁷ | 🟡 | 🟡 | ✅ | ✅ | ✅ |
+| Gift cards and store credit | 🟡⁷ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Loyalty points and tiers | 🟡⁷ | 🟡 | 🟡 | ✅ | ✅ | ✅ |
 | Store-level prices and promotions | ❌ | 🟡 | 🟡 | ✅ | ✅ | ✅ |
 | Cart discounts and buy-one-get-one | 🟡⁷ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Size and colour variants | 🟡⁸ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -273,7 +273,7 @@ Leaders: Lightspeed Retail, Shopify POS, Oracle Retail (Xstore), Microsoft Dynam
 - 🔁 Stock, orders, invoices and credit notes are ERP records, so a transfer, a hand-over and a return always add up with the books.
 - 🤝 Franchise reporting and royalty invoicing are built in, with a portal for the franchisee.
 - 📦 Transfers that arrive in parts and write off what is lost, with the goods in transit kept as a place.
-- 🔐 A pickup code is checked at the hand-over, and an order is never both collected and shipped.
+- 🔐 A pickup code is checked at the hand-over, and an order already collected or shipped from a store is refused a second fulfilment.
 - 🏠 Self-hosted, open source, no per-store fee, with Arabic and Hindi.
 
 ### 🚧 Where the leaders are still ahead
@@ -292,6 +292,7 @@ Leaders: Lightspeed Retail, Shopify POS, Oracle Retail (Xstore), Microsoft Dynam
 
 ### ✅ Recently shipped
 
+- [x] **0.3.15:** the interface starts through the frontend's `mountApp`; no routes to the screens apps no longer have.
 - [x] **0.3.14:** the franchise portal finds a franchisee's customers as ERP's portal does, never a web shop's guest or a disabled customer.
 - [x] **0.3.13:** the interface on the tuned design system, with better menu icons and cleaner print.
 - [x] **0.3.12:** the redesigned interface, with the stores' home on the work-home pattern.
