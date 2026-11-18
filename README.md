@@ -7,7 +7,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-0.3.15-be185d?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-be185d?style=flat-square)](CHANGELOG.md)
 [![Licence: AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-blue?style=flat-square)](LICENSE)
 [![Ferrum platform](https://img.shields.io/badge/runs%20on-Ferrum-2f5bea?style=flat-square)](https://github.com/CBFerrum/Ferrum)
 ![Rust](https://img.shields.io/badge/Rust-server-b7410e?style=flat-square&logo=rust)
@@ -37,10 +37,10 @@ Ferrum Retail is for chains of shops and the franchisors behind them. It adds cl
 
 | | |
 |---|---|
-| **Version** | 0.3.15 |
+| **Version** | 0.4.0 |
 | **Kind** | Its own interface at `/retail/` (what waits on the stores), the franchisee's page of the portal at `/portal/franchise/`, and the platform's records screens for the rest |
 | **What it adds** | 9 entities (7 you work with, 2 that sit inside them), 2 roles, 1 report (Stock by Store), 1 menu module, 1 field on ERP's warehouse (Is A Store), 1 package. It has no print formats of its own |
-| **Depends on** | Ferrum platform `>=0.3.2, <0.4` and [ERP](https://github.com/CBFerrum/ferrum-app-erp) `>=0.1` (selling, inventory and accounting) |
+| **Depends on** | Ferrum platform `>=0.4.0, <0.5` and [ERP](https://github.com/CBFerrum/ferrum-app-erp) `>=0.1` (selling, inventory and accounting) |
 | **Works with** | [Point of Sale](https://github.com/CBFerrum/ferrum-app-pos) (goods sold at a till can be brought back to any store), Commerce (its returns count too), ERP Procurement (replenishing stores) |
 | **Languages** | English, Arabic (right to left), Hindi |
 | **Tests** | 4 Rust tests (two end-to-end walks of a chain of shops), 3 interface tests |
@@ -292,6 +292,7 @@ Leaders: Lightspeed Retail, Shopify POS, Oracle Retail (Xstore), Microsoft Dynam
 
 ### ✅ Recently shipped
 
+- [x] **0.4.0:** Upkeep takes one workspace: needs Ferrum 0.4.0.
 - [x] **0.3.15:** the interface starts through the frontend's `mountApp`; no routes to the screens apps no longer have.
 - [x] **0.3.14:** the franchise portal finds a franchisee's customers as ERP's portal does, never a web shop's guest or a disabled customer.
 - [x] **0.3.13:** the interface on the tuned design system, with better menu icons and cleaner print.

@@ -1,6 +1,6 @@
 id: retail
 name: Retail
-version: 0.3.15
+version: 0.4.0
 publisher: cbferrum
 summary: "Click and collect, ship from store, returns to any store, stock by store, transfers between stores, and franchise royalties reported on the portal and invoiced through ERP"
 description: README.md
@@ -9,7 +9,7 @@ license: AGPL-3.0-only
 homepage: https://github.com/CBFerrum/ferrum-app-retail
 support: https://github.com/CBFerrum/ferrum-app-retail/issues
 runtime: native
-platform: ">=0.3.2, <0.4"
+platform: ">=0.4.0, <0.5"
 # Stock, orders and invoices are ERP's: installing it installs ERP.
 requires: {erp: ">=0.1"}
 packages: [retail]
